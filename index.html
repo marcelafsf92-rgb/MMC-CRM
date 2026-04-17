@@ -658,7 +658,7 @@ function renderPrecos(){
     items.forEach(cat=>{
       const ci=cat._idx;
       html+='<div style="background:#fff;border-radius:12px;border:1px solid var(--border);overflow:hidden">'
-        +'<div style="background:'+bg+';color:#fff;padding:10px 14px;font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:14px;letter-spacing:.3px">'+esc(cat.nome)+'</div>'
+        +'<div style="background:'+bg+';color:#fff;padding:10px 14px;font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:14px;letter-spacing:.3px">'+(editingPrecos?'<input type="text" value="'+esc(cat.nome)+'" onchange="updPrecoNome('+ci+',this.value)" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:6px;color:#fff;font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:14px;padding:4px 8px;width:100%">':esc(cat.nome))+'</div>'
         +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
         +'<tr style="background:#f0f3fa"><th style="padding:6px 10px;text-align:left;font-weight:600;color:var(--navy);font-size:10px">Período</th><th style="padding:6px 10px;text-align:right;font-weight:600;color:var(--navy);font-size:10px">Valor</th><th style="padding:6px 10px;text-align:right;font-weight:600;color:var(--navy);font-size:10px">Mínimo</th></tr>'
         +cat.periodos.map((r,i)=>{
@@ -677,6 +677,9 @@ function renderPrecos(){
 }
 function updPreco(catIdx,periodIdx,field,val){
   PRECOS[catIdx].periodos[periodIdx][field]=parseFloat(val)||0;
+}
+function updPrecoNome(catIdx,val){
+  PRECOS[catIdx].nome=val;
 }
 async function savePrecos(){
   localStorage.setItem('mmc_precos',JSON.stringify(PRECOS));

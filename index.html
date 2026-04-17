@@ -611,7 +611,7 @@ async function bgSync(){
 }
 async function loadAll(){
   setLoading(true);
-  try{const [c,i]=await Promise.all([sGet('crm_clientes'),sGet('crm_interacoes')]);C=c;I=i;render()}
+  try{const [c,i]=await Promise.all([sGet('crm_clientes'),sGet('crm_interacoes')]);C=c;I=i;render();loadPrecos()}
   catch{toast('Erro ao carregar.','err')}
   finally{setLoading(false)}
 }
@@ -637,8 +637,6 @@ const PRECOS_DEFAULT=[
 ];
 let PRECOS=JSON.parse(localStorage.getItem('mmc_precos'))||JSON.parse(JSON.stringify(PRECOS_DEFAULT));
 let editingPrecos=false;
-function savePrecos(){localStorage.setItem('mmc_precos',JSON.stringify(PRECOS))}
-function toggleEditPrecos(){editingPrecos=!editingPrecos;document.getElementById('btnEditPrecos').textContent=editingPrecos?'Salvar Preços':'Editar Preços';document.getElementById('btnEditPrecos').style.background=editingPrecos?'var(--green)':'var(--gold)';if(!editingPrecos)savePrecos();renderPrecos()}
 function fmtR(n){if(!n||n===0)return'—';return'R$'+n.toLocaleString('pt-BR')}
 function renderPrecos(){
   const q=(document.getElementById('searchPreco').value||'').toLowerCase();
@@ -646,32 +644,67 @@ function renderPrecos(){
   const grid=document.getElementById('precosGrid');
   if(isEditor)document.getElementById('btnEditPrecos').style.display='flex';
   if(!filtered.length){grid.innerHTML='<div class="cempty">Nenhuma máquina encontrada</div>';return}
-  const catColors={plataforma:['var(--navy)','#fff'],munck:['#92400e','#fff'],guindaste:['#5b21b6','#fff']};
+  const catColors={plataforma:'var(--navy)',munck:'#92400e',guindaste:'#5b21b6'};
   const catLabels={plataforma:'🏗 PLATAFORMAS',munck:'🏗 MUNCKS',guindaste:'⬆ GUINDASTES'};
   // Group by category
-  let lastCat='';
-  grid.innerHTML=filtered.map((cat,ci)=>{
-    let catHeader='';
-    if(cat.cat!==lastCat){lastCat=cat.cat;catHeader='<div style="font-family:Barlow Condensed,sans-serif;font-weight:800;font-size:18px;color:var(--navy);margin:'+(ci?'24px':'0')+' 0 10px;text-transform:uppercase;letter-spacing:1px">'+(catLabels[cat.cat]||cat.cat)+'</div>'}
-    const [bg,fg]=catColors[cat.cat]||['var(--navy)','#fff'];
-    return catHeader+'<div style="background:#fff;border-radius:14px;border:1px solid var(--border);margin-bottom:14px;overflow:hidden">'
-    +'<div style="background:'+bg+';color:'+fg+';padding:12px 16px;font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:16px;letter-spacing:.3px">'+esc(cat.nome)+'</div>'
-    +'<table style="width:100%;border-collapse:collapse;font-size:13px">'
-    +'<tr style="background:#f0f3fa"><th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--navy);font-size:12px">Período</th><th style="padding:8px 12px;text-align:right;font-weight:600;color:var(--navy);font-size:12px">Valor</th><th style="padding:8px 12px;text-align:right;font-weight:600;color:var(--navy);font-size:12px">Mínimo</th></tr>'
-    +cat.periodos.map((r,i)=>{
-      if(editingPrecos){
-        return '<tr style="background:'+(i%2?'#f8f9fc':'#fff')+'"><td style="padding:6px 12px;font-weight:500">'+esc(r.p)+'</td>'
-          +'<td style="padding:6px 8px;text-align:right"><input type="number" value="'+r.v+'" onchange="updPreco('+ci+','+i+',\'v\',this.value)" style="width:80px;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;text-align:right;font-weight:600"></td>'
-          +'<td style="padding:6px 8px;text-align:right"><input type="number" value="'+r.m+'" onchange="updPreco('+ci+','+i+',\'m\',this.value)" style="width:80px;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;text-align:right;font-weight:600"></td></tr>';
-      }
-      return '<tr style="background:'+(i%2?'#f8f9fc':'#fff')+'"><td style="padding:8px 12px;font-weight:500">'+esc(r.p)+'</td><td style="padding:8px 12px;text-align:right;font-weight:600;color:var(--navy)">'+fmtR(r.v)+'</td><td style="padding:8px 12px;text-align:right;color:var(--green);font-weight:600">'+fmtR(r.m)+'</td></tr>';
-    }).join('')
-    +'</table></div>';
-  }).join('');
+  const groups={};
+  filtered.forEach((cat,ci)=>{if(!groups[cat.cat])groups[cat.cat]=[];groups[cat.cat].push({...cat,_idx:PRECOS.indexOf(cat)})});
+  let html='';
+  Object.keys(groups).forEach(catKey=>{
+    const items=groups[catKey];
+    const bg=catColors[catKey]||'var(--navy)';
+    html+='<div style="font-family:Barlow Condensed,sans-serif;font-weight:800;font-size:18px;color:var(--navy);margin:16px 0 10px;text-transform:uppercase;letter-spacing:1px">'+(catLabels[catKey]||catKey)+'</div>';
+    html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:8px">';
+    items.forEach(cat=>{
+      const ci=cat._idx;
+      html+='<div style="background:#fff;border-radius:12px;border:1px solid var(--border);overflow:hidden">'
+        +'<div style="background:'+bg+';color:#fff;padding:10px 14px;font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:14px;letter-spacing:.3px">'+esc(cat.nome)+'</div>'
+        +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
+        +'<tr style="background:#f0f3fa"><th style="padding:6px 10px;text-align:left;font-weight:600;color:var(--navy);font-size:10px">Período</th><th style="padding:6px 10px;text-align:right;font-weight:600;color:var(--navy);font-size:10px">Valor</th><th style="padding:6px 10px;text-align:right;font-weight:600;color:var(--navy);font-size:10px">Mínimo</th></tr>'
+        +cat.periodos.map((r,i)=>{
+          if(editingPrecos){
+            return '<tr style="background:'+(i%2?'#f8f9fc':'#fff')+'"><td style="padding:4px 10px;font-weight:500;font-size:11px">'+esc(r.p)+'</td>'
+              +'<td style="padding:4px 6px;text-align:right"><input type="number" value="'+r.v+'" onchange="updPreco('+ci+','+i+',\'v\',this.value)" style="width:70px;padding:3px 5px;border:1.5px solid var(--border);border-radius:5px;font-size:12px;text-align:right;font-weight:600"></td>'
+              +'<td style="padding:4px 6px;text-align:right"><input type="number" value="'+r.m+'" onchange="updPreco('+ci+','+i+',\'m\',this.value)" style="width:70px;padding:3px 5px;border:1.5px solid var(--border);border-radius:5px;font-size:12px;text-align:right;font-weight:600"></td></tr>';
+          }
+          return '<tr style="background:'+(i%2?'#f8f9fc':'#fff')+'"><td style="padding:5px 10px;font-weight:500;font-size:11px">'+esc(r.p)+'</td><td style="padding:5px 10px;text-align:right;font-weight:600;color:var(--navy);font-size:12px">'+fmtR(r.v)+'</td><td style="padding:5px 10px;text-align:right;color:var(--green);font-weight:600;font-size:12px">'+fmtR(r.m)+'</td></tr>';
+        }).join('')
+        +'</table></div>';
+    });
+    html+='</div>';
+  });
+  grid.innerHTML=html;
 }
 function updPreco(catIdx,periodIdx,field,val){
-  const filtered=document.getElementById('searchPreco').value?PRECOS.filter(p=>p.nome.toLowerCase().includes(document.getElementById('searchPreco').value.toLowerCase())):PRECOS;
-  filtered[catIdx].periodos[periodIdx][field]=parseFloat(val)||0;
+  PRECOS[catIdx].periodos[periodIdx][field]=parseFloat(val)||0;
+}
+async function savePrecos(){
+  localStorage.setItem('mmc_precos',JSON.stringify(PRECOS));
+  // Save to Supabase for all devices
+  try{
+    const r=await fetch(SUPA_URL+'/rest/v1/crm_config?id=eq.precos',{headers:SH});
+    const exists=await r.json();
+    if(exists.length){
+      await fetch(SUPA_URL+'/rest/v1/crm_config?id=eq.precos',{method:'PATCH',headers:{...SH,'Prefer':'return=minimal'},body:JSON.stringify({data:PRECOS})});
+    }else{
+      await fetch(SUPA_URL+'/rest/v1/crm_config',{method:'POST',headers:{...SH,'Prefer':'return=minimal'},body:JSON.stringify({id:'precos',data:PRECOS})});
+    }
+    toast('Preços salvos para todos os dispositivos!');
+  }catch{toast('Salvo localmente. Erro ao sincronizar.','err')}
+}
+async function loadPrecos(){
+  try{
+    const r=await fetch(SUPA_URL+'/rest/v1/crm_config?id=eq.precos',{headers:SH});
+    const data=await r.json();
+    if(data.length&&data[0].data){PRECOS=data[0].data;localStorage.setItem('mmc_precos',JSON.stringify(PRECOS))}
+  }catch{}
+}
+function toggleEditPrecos(){
+  editingPrecos=!editingPrecos;
+  document.getElementById('btnEditPrecos').textContent=editingPrecos?'Salvar Preços':'Editar Preços';
+  document.getElementById('btnEditPrecos').style.background=editingPrecos?'var(--green)':'var(--gold)';
+  if(!editingPrecos)savePrecos();
+  renderPrecos();
 }
 
 // ── Calculadora de Frete ──

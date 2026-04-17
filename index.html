@@ -243,7 +243,7 @@
   </div>
   <div style="font-size:12px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
     <span>Valores em R$ • Orçamentos sem frete • Tabela 2026</span>
-    <button id="btnEditPrecos" class="btn-gold" style="display:none;font-size:11px;padding:5px 12px" onclick="toggleEditPrecos()">Editar Preços</button>
+    <button id="btnEditPrecos" class="btn-gold" style="display:none;font-size:11px;padding:5px 12px" onclick="toggleEditPrecos()">Editar Tabela</button>
   </div>
   <div id="precosGrid"></div>
 </div></div>
@@ -704,7 +704,7 @@ async function loadPrecos(){
 }
 function toggleEditPrecos(){
   editingPrecos=!editingPrecos;
-  document.getElementById('btnEditPrecos').textContent=editingPrecos?'Salvar Preços':'Editar Preços';
+  document.getElementById('btnEditPrecos').textContent=editingPrecos?'Salvar Tabela':'Editar Tabela';
   document.getElementById('btnEditPrecos').style.background=editingPrecos?'var(--green)':'var(--gold)';
   if(!editingPrecos)savePrecos();
   renderPrecos();

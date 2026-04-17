@@ -165,6 +165,7 @@
       .pipe{grid-template-columns:1fr;gap:16px}
       .pipe-col{padding:10px}
       .cl-grid{grid-template-columns:1fr}.frow{grid-template-columns:1fr}
+      #tab-frete .bwrap>div{grid-template-columns:1fr!important}
     }
     @media(max-width:640px){
       .hdr{padding:0 10px;height:56px}.hdr-title{font-size:16px}.hdr-sub{display:none}
@@ -204,6 +205,7 @@
   <button class="tbtn active" data-tab="pipeline">Pipeline <span class="tc" id="tcP">0</span></button>
   <button class="tbtn" data-tab="clientes">Clientes <span class="tc" id="tcC">0</span></button>
   <button class="tbtn" data-tab="precos">Tabela de Preços</button>
+  <button class="tbtn" data-tab="frete">Calculadora Frete</button>
 </div></div>
 
 <div class="dash" id="dashboard">
@@ -241,6 +243,56 @@
   </div>
   <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Valores em R$ • Orçamentos sem frete • Tabela 2022</div>
   <div id="precosGrid"></div>
+</div></div>
+
+<!-- Tab: Frete -->
+<div class="tcont" id="tab-frete"><div class="bwrap">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:900px">
+    <!-- Config Panel -->
+    <div style="background:#fff;border-radius:14px;border:1px solid var(--border);padding:20px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:18px;color:var(--navy);margin-bottom:16px">⛽ Configuração</div>
+      <div class="fg" style="margin-bottom:12px"><label>Preço Diesel (R$/litro)</label><input id="frDiesel" type="number" step="0.01" value="6.20"></div>
+      <div class="fg" style="margin-bottom:12px"><label>Frete fixo Ribeirão - Pequenas (≤20m)</label><input id="frRibPeq" type="number" value="500"></div>
+      <div class="fg" style="margin-bottom:12px"><label>Frete fixo Ribeirão - Grandes (≥26m)</label><input id="frRibGrd" type="number" value="1000"></div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;color:var(--navy);margin:16px 0 10px;border-top:1px solid var(--border);padding-top:14px">Parâmetros por Porte</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="background:#f0f4ff;border-radius:10px;padding:12px">
+          <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:8px">Pequenas (≤20m)</div>
+          <div class="fg" style="margin-bottom:8px"><label>Km/Litro</label><input id="frKmlPeq" type="number" step="0.1" value="3.0" style="font-size:13px;padding:7px 10px"></div>
+          <div class="fg"><label>Multiplicador</label><input id="frMultPeq" type="number" step="0.1" value="3.4" style="font-size:13px;padding:7px 10px"></div>
+        </div>
+        <div style="background:#fef3c7;border-radius:10px;padding:12px">
+          <div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:8px">Grandes (≥26m)</div>
+          <div class="fg" style="margin-bottom:8px"><label>Km/Litro</label><input id="frKmlGrd" type="number" step="0.1" value="2.5" style="font-size:13px;padding:7px 10px"></div>
+          <div class="fg"><label>Multiplicador</label><input id="frMultGrd" type="number" step="0.1" value="3.4" style="font-size:13px;padding:7px 10px"></div>
+        </div>
+      </div>
+      <div style="margin-top:12px;padding:10px;background:#d1fae5;border-radius:8px;font-size:12px;color:#065f46">
+        <b>Valor/km resultante:</b><br>
+        Pequenas: <b id="frResKmPeq">R$0</b> /km<br>
+        Grandes: <b id="frResKmGrd">R$0</b> /km
+      </div>
+    </div>
+    <!-- Calculator Panel -->
+    <div style="background:#fff;border-radius:14px;border:1px solid var(--border);padding:20px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:18px;color:var(--navy);margin-bottom:16px">🧮 Calcular Frete</div>
+      <div class="fg" style="margin-bottom:12px"><label>Porte da Máquina</label><select id="frPorte"><option value="pequena">Pequena (≤20m)</option><option value="grande">Grande (≥26m)</option></select></div>
+      <div class="fg" style="margin-bottom:12px"><label>Destino</label><select id="frDestino"><option value="km">Por Km (informar distância)</option><option value="ribeirao">Ribeirão Preto (preço fixo)</option></select></div>
+      <div class="fg" style="margin-bottom:12px" id="fgDistancia"><label>Distância (km) — só ida</label><input id="frKm" type="number" value="100" min="1"></div>
+      <div class="fg" style="margin-bottom:12px"><label>Cobrança</label><select id="frIdaVolta"><option value="ida">Só ida</option><option value="idavolta">Ida e volta</option></select></div>
+      <div class="fg" style="margin-bottom:16px"><label>Cliente (opcional)</label><input id="frCliente" type="text" placeholder="Nome do cliente"></div>
+      <button onclick="calcFrete()" style="width:100%;padding:12px;background:var(--navy);color:#fff;border:none;border-radius:10px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;cursor:pointer;transition:all .15s">Calcular</button>
+      <!-- Resultado -->
+      <div id="frResultado" style="margin-top:16px;display:none">
+        <div style="background:linear-gradient(135deg,#1E3A8A,#2348a8);border-radius:14px;padding:20px;color:#fff;text-align:center">
+          <div style="font-size:13px;opacity:.7;margin-bottom:4px">Valor do Frete</div>
+          <div id="frValorFinal" style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:36px;color:var(--gold)">R$0</div>
+          <div id="frDetalhe" style="font-size:12px;opacity:.7;margin-top:6px"></div>
+        </div>
+        <div id="frBreakdown" style="margin-top:10px;padding:12px;background:#f0f4ff;border-radius:10px;font-size:12px;color:var(--text)"></div>
+      </div>
+    </div>
+  </div>
 </div></div>
 
 <!-- Modal: Cliente/Lead -->
@@ -560,6 +612,65 @@ function renderPrecos(){
   ).join('');
 }
 
+// ── Calculadora de Frete ──
+function getFreteParams(){
+  const diesel=parseFloat(document.getElementById('frDiesel').value)||6.20;
+  const kmlPeq=parseFloat(document.getElementById('frKmlPeq').value)||3.0;
+  const kmlGrd=parseFloat(document.getElementById('frKmlGrd').value)||2.5;
+  const multPeq=parseFloat(document.getElementById('frMultPeq').value)||3.4;
+  const multGrd=parseFloat(document.getElementById('frMultGrd').value)||3.4;
+  const ribPeq=parseFloat(document.getElementById('frRibPeq').value)||500;
+  const ribGrd=parseFloat(document.getElementById('frRibGrd').value)||1000;
+  const kmPeq=(diesel/kmlPeq)*multPeq;
+  const kmGrd=(diesel/kmlGrd)*multGrd;
+  document.getElementById('frResKmPeq').textContent='R$'+kmPeq.toFixed(2);
+  document.getElementById('frResKmGrd').textContent='R$'+kmGrd.toFixed(2);
+  return{diesel,kmlPeq,kmlGrd,multPeq,multGrd,ribPeq,ribGrd,kmPeq,kmGrd};
+}
+function toggleDistancia(){
+  const dest=document.getElementById('frDestino').value;
+  document.getElementById('fgDistancia').style.display=dest==='km'?'flex':'none';
+}
+function calcFrete(){
+  const p=getFreteParams();
+  const porte=document.getElementById('frPorte').value;
+  const dest=document.getElementById('frDestino').value;
+  const idaVolta=document.getElementById('frIdaVolta').value;
+  const km=parseFloat(document.getElementById('frKm').value)||0;
+  let valor=0,detalhe='',breakdown='';
+  if(dest==='ribeirao'){
+    valor=porte==='pequena'?p.ribPeq:p.ribGrd;
+    detalhe='Frete fixo Ribeirão Preto — '+(porte==='pequena'?'Pequena':'Grande');
+    breakdown='Preço fixo para Ribeirão Preto';
+  }else{
+    const valorKm=porte==='pequena'?p.kmPeq:p.kmGrd;
+    const dist=idaVolta==='idavolta'?km*2:km;
+    valor=valorKm*dist;
+    const tipo=idaVolta==='idavolta'?'ida e volta':'só ida';
+    detalhe=dist+'km ('+tipo+') × R$'+valorKm.toFixed(2)+'/km';
+    const kml=porte==='pequena'?p.kmlPeq:p.kmlGrd;
+    const litros=dist/kml;
+    breakdown='<b>Detalhamento:</b><br>'
+      +'Diesel: R$'+p.diesel.toFixed(2)+'/L ÷ '+kml+' km/L = R$'+(p.diesel/kml).toFixed(2)+'/km (custo combustível)<br>'
+      +'× Multiplicador '+( porte==='pequena'?p.multPeq:p.multGrd)+'x = <b>R$'+valorKm.toFixed(2)+'/km</b><br>'
+      +'Distância: '+km+'km'+(idaVolta==='idavolta'?' × 2 = '+dist+'km':'')+' <br>'
+      +'Combustível estimado: '+litros.toFixed(1)+' litros (R$'+(litros*p.diesel).toFixed(0)+')';
+  }
+  // Round to nearest 50
+  valor=Math.ceil(valor/50)*50;
+  document.getElementById('frValorFinal').textContent='R$'+valor.toLocaleString('pt-BR');
+  document.getElementById('frDetalhe').textContent=detalhe;
+  document.getElementById('frBreakdown').innerHTML=breakdown;
+  document.getElementById('frResultado').style.display='block';
+}
+function initFrete(){
+  getFreteParams();
+  toggleDistancia();
+  ['frDiesel','frKmlPeq','frKmlGrd','frMultPeq','frMultGrd','frRibPeq','frRibGrd'].forEach(id=>
+    document.getElementById(id).addEventListener('input',getFreteParams));
+  document.getElementById('frDestino').addEventListener('change',toggleDistancia);
+}
+
 // ── Events ──
 document.getElementById('modeBtn').addEventListener('click',()=>{if(!isEditor)checkEditor();else{isEditor=false;sessionStorage.removeItem('mmc_crm_editor');applyMode();toast('Modo visualização')}});
 document.getElementById('refreshBtn').addEventListener('click',()=>{loadAll();toast('Atualizando...')});
@@ -592,7 +703,7 @@ async function buscarCNPJ(){
 document.getElementById('iSave').addEventListener('click',saveInteracao);
 document.getElementById('searchCl').addEventListener('input',()=>render());
 document.getElementById('searchPreco').addEventListener('input',()=>renderPrecos());
-document.querySelectorAll('.tbtn').forEach(b=>b.addEventListener('click',()=>{curTab=b.dataset.tab;document.querySelectorAll('.tbtn').forEach(x=>x.classList.toggle('active',x.dataset.tab===curTab));document.querySelectorAll('.tcont').forEach(x=>x.classList.toggle('active',x.id==='tab-'+curTab));if(curTab==='precos')renderPrecos();else render()}));
+document.querySelectorAll('.tbtn').forEach(b=>b.addEventListener('click',()=>{curTab=b.dataset.tab;document.querySelectorAll('.tbtn').forEach(x=>x.classList.toggle('active',x.dataset.tab===curTab));document.querySelectorAll('.tcont').forEach(x=>x.classList.toggle('active',x.id==='tab-'+curTab));if(curTab==='precos')renderPrecos();else if(curTab==='frete')initFrete();else render()}));
 document.querySelectorAll('.mbg').forEach(bg=>bg.addEventListener('click',e=>{if(e.target===bg)bg.classList.remove('open')}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.mbg.open').forEach(m=>m.classList.remove('open'))});
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));

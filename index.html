@@ -275,6 +275,7 @@
         Pequenas: <b id="frResKmPeq">R$0</b> /km<br>
         Grandes: <b id="frResKmGrd">R$0</b> /km
       </div>
+      <button id="frSaveBtn" onclick="saveFreteConfig()" style="display:none;margin-top:12px;width:100%;padding:10px;background:var(--green);color:#fff;border:none;border-radius:10px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;cursor:pointer;transition:all .15s">Salvar Configuração</button>
 
       <!-- Fórmula -->
       <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
@@ -725,15 +726,52 @@ function getFreteParams(){
   const custoGrd=(diesel/kmlGrd);
   document.getElementById('frResKmPeq').textContent='R$'+kmPeq.toFixed(2);
   document.getElementById('frResKmGrd').textContent='R$'+kmGrd.toFixed(2);
-  // Formula examples
   document.getElementById('frFormulaEx').innerHTML=
     '<b style="color:var(--navy)">Pequenas:</b> R$'+diesel.toFixed(2)+' ÷ '+kmlPeq+' km/L = <b>R$'+custoPeq.toFixed(2)+'</b> (custo diesel/km) × '+multPeq+'x = <b style="color:var(--green)">R$'+kmPeq.toFixed(2)+'/km</b><br>'
     +'<b style="color:#92400e">Grandes:</b> R$'+diesel.toFixed(2)+' ÷ '+kmlGrd+' km/L = <b>R$'+custoGrd.toFixed(2)+'</b> (custo diesel/km) × '+multGrd+'x = <b style="color:var(--green)">R$'+kmGrd.toFixed(2)+'/km</b>';
+  // Show save button when values change
+  document.getElementById('frSaveBtn').style.display='block';
   return{diesel,kmlPeq,kmlGrd,multPeq,multGrd,ribPeq,ribGrd,kmPeq,kmGrd};
 }
 function toggleDistancia(){
   const dest=document.getElementById('frDestino').value;
   document.getElementById('fgDistancia').style.display=dest==='km'?'flex':'none';
+}
+async function saveFreteConfig(){
+  const cfg={diesel:document.getElementById('frDiesel').value,kmlPeq:document.getElementById('frKmlPeq').value,kmlGrd:document.getElementById('frKmlGrd').value,multPeq:document.getElementById('frMultPeq').value,multGrd:document.getElementById('frMultGrd').value,ribPeq:document.getElementById('frRibPeq').value,ribGrd:document.getElementById('frRibGrd').value};
+  localStorage.setItem('mmc_frete_cfg',JSON.stringify(cfg));
+  try{
+    const r=await fetch(SUPA_URL+'/rest/v1/crm_config?id=eq.frete',{headers:SH});
+    const exists=await r.json();
+    if(exists.length){
+      await fetch(SUPA_URL+'/rest/v1/crm_config?id=eq.frete',{method:'PATCH',headers:{...SH,'Prefer':'return=minimal'},body:JSON.stringify({data:cfg})});
+    }else{
+      await fetch(SUPA_URL+'/rest/v1/crm_config',{method:'POST',headers:{...SH,'Prefer':'return=minimal'},body:JSON.stringify({id:'frete',data:cfg})});
+    }
+    toast('Configuração salva!');
+  }catch{toast('Salvo localmente.','err')}
+  document.getElementById('frSaveBtn').style.display='none';
+}
+async function loadFreteConfig(){
+  try{
+    const r=await fetch(SUPA_URL+'/rest/v1/crm_config?id=eq.frete',{headers:SH});
+    const data=await r.json();
+    if(data.length&&data[0].data){
+      const cfg=data[0].data;
+      if(cfg.diesel)document.getElementById('frDiesel').value=cfg.diesel;
+      if(cfg.kmlPeq)document.getElementById('frKmlPeq').value=cfg.kmlPeq;
+      if(cfg.kmlGrd)document.getElementById('frKmlGrd').value=cfg.kmlGrd;
+      if(cfg.multPeq)document.getElementById('frMultPeq').value=cfg.multPeq;
+      if(cfg.multGrd)document.getElementById('frMultGrd').value=cfg.multGrd;
+      if(cfg.ribPeq)document.getElementById('frRibPeq').value=cfg.ribPeq;
+      if(cfg.ribGrd)document.getElementById('frRibGrd').value=cfg.ribGrd;
+    }
+  }catch{}
+  // Also try localStorage
+  const local=localStorage.getItem('mmc_frete_cfg');
+  if(local){try{const cfg=JSON.parse(local);Object.keys(cfg).forEach(k=>{const el=document.getElementById('fr'+k.charAt(0).toUpperCase()+k.slice(1));if(el&&cfg[k])el.value=cfg[k]})}catch{}}
+  getFreteParams();
+  document.getElementById('frSaveBtn').style.display='none';
 }
 function calcFrete(){
   const p=getFreteParams();
@@ -760,7 +798,6 @@ function calcFrete(){
       +'Distância: '+km+'km'+(idaVolta==='idavolta'?' × 2 = '+dist+'km':'')+' <br>'
       +'Combustível estimado: '+litros.toFixed(1)+' litros (R$'+(litros*p.diesel).toFixed(0)+')';
   }
-  // Round to nearest 50
   valor=Math.ceil(valor/50)*50;
   document.getElementById('frValorFinal').textContent='R$'+valor.toLocaleString('pt-BR');
   document.getElementById('frDetalhe').textContent=detalhe;
@@ -768,7 +805,7 @@ function calcFrete(){
   document.getElementById('frResultado').style.display='block';
 }
 function initFrete(){
-  getFreteParams();
+  loadFreteConfig();
   toggleDistancia();
   ['frDiesel','frKmlPeq','frKmlGrd','frMultPeq','frMultGrd','frRibPeq','frRibGrd'].forEach(id=>
     document.getElementById(id).addEventListener('input',getFreteParams));

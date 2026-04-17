@@ -897,6 +897,7 @@ document.querySelectorAll('.tbtn').forEach(b=>b.addEventListener('click',()=>{cu
 document.querySelectorAll('.mbg').forEach(bg=>bg.addEventListener('click',e=>{if(e.target===bg)bg.classList.remove('open')}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.mbg.open').forEach(m=>m.classList.remove('open'))});
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+if(new URLSearchParams(window.location.search).get('auth')===EDIT_PASS){isEditor=true;sessionStorage.setItem('mmc_crm_editor','true')}
 applyMode();loadAll();
 </script>
 </body>

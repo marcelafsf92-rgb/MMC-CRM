@@ -398,14 +398,19 @@ function render(){
 }
 
 // ── Ficha do Cliente ──
-function openFicha(id){
+async function openFicha(id){
   const c=C.find(x=>x.id===id);if(!c)return;
   const interacoes=I.filter(i=>i.cliente_id===id);
   const tipoIcons={ligacao:'📞',whatsapp:'💬',email:'📧',visita:'🏢',outro:'📝'};
   const etapaLabels={lead:'Lead',contato:'Contato',proposta:'Proposta',negociacao:'Negociação',fechado:'Fechado',perdido:'Perdido'};
+  
+  // Fetch machines and fleet for this client
+  let maqHtml='<div class="cempty" style="padding:10px;font-size:12px">Carregando...</div>';
+  let frtHtml='';
+  
   document.getElementById('mFichaTitle').textContent=c.nome||'Cliente';
-  document.getElementById('fichaBody').innerHTML=
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-bottom:16px">'
+  const buildFicha=(maqHtml,frtHtml)=>{
+    return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-bottom:16px">'
     +'<div><span style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase">Empresa</span><div style="font-size:14px;font-weight:600">'+esc(c.nome||'—')+'</div></div>'
     +'<div><span style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase">CNPJ</span><div style="font-size:14px">'+esc(c.cnpj||'—')+'</div></div>'
     +'<div><span style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase">Contato</span><div style="font-size:14px">'+esc(c.contato_nome||'—')+'</div></div>'
@@ -414,7 +419,7 @@ function openFicha(id){
     +'<div><span style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase">Cidade</span><div style="font-size:14px">'+esc((c.cidade||'')+(c.estado?' - '+c.estado:''))+'</div></div>'
     +'<div><span style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase">Etapa</span><div style="font-size:14px;font-weight:600;color:var(--navy)">'+esc(etapaLabels[c.etapa]||c.etapa)+'</div></div>'
     +'<div><span style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase">Valor</span><div style="font-size:14px;font-weight:700;color:var(--green)">'+fmtVal(c.valor_estimado)+'</div></div>'
-    +'<div style="grid-column:1/-1"><span style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase">Máquinas</span><div style="font-size:14px">'+esc(c.maquinas_interesse||'—')+'</div></div>'
+    +'<div style="grid-column:1/-1"><span style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase">Máquinas de Interesse</span><div style="font-size:14px">'+esc(c.maquinas_interesse||'—')+'</div></div>'
     +(c.observacoes?'<div style="grid-column:1/-1"><span style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase">Obs</span><div style="font-size:13px;color:var(--muted)">'+esc(c.observacoes)+'</div></div>':'')
     +'</div>'
     +'<div style="display:flex;gap:8px;margin-bottom:16px">'
@@ -423,9 +428,55 @@ function openFicha(id){
     +(c.telefone?'<a href="'+wppLink(c.telefone)+'" target="_blank" class="btn-gold" style="background:#25d366;text-decoration:none">WhatsApp</a>':'')
     +(c.email?'<a href="'+emailLink(c.email,c.contato_nome||c.nome)+'" class="btn-gold" style="background:#1e40af;text-decoration:none;color:#fff">Email</a>':'')
     +'</div>'
-    +'<div style="font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:16px;color:var(--navy);margin-bottom:8px">Histórico de Interações</div>'
-    +(interacoes.length?'<div class="timeline">'+interacoes.map(i=>'<div class="tl-item"><div class="tl-icon '+(i.tipo||'outro')+'">'+(tipoIcons[i.tipo]||'📝')+'</div><div class="tl-body"><div class="tl-desc">'+esc(i.descricao||'')+'</div><div class="tl-meta">'+fd(i.data)+' '+esc(i.hora||'')+' • '+esc(i.tipo||'')+(i.responsavel?' • '+esc(i.responsavel):'')+'</div></div></div>').join('')+'</div>':'<div class="cempty" style="padding:16px">Nenhuma interação registrada</div>');
+    // Máquinas Locadas (do painel de plataformas)
+    +'<div style="font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:16px;color:var(--navy);margin-bottom:8px">🏗 Máquinas Locadas</div>'
+    +maqHtml
+    // Fretes (do painel de frota)
+    +frtHtml
+    // Interações
+    +'<div style="font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:16px;color:var(--navy);margin-bottom:8px;margin-top:16px">💬 Histórico de Interações</div>'
+    +(interacoes.length?'<div class="timeline">'+interacoes.map(i=>'<div class="tl-item"><div class="tl-icon '+(i.tipo||'outro')+'">'+(tipoIcons[i.tipo]||'📝')+'</div><div class="tl-body"><div class="tl-desc">'+esc(i.descricao||'')+'</div><div class="tl-meta">'+fd(i.data)+' '+esc(i.hora||'')+' • '+esc(i.tipo||'')+(i.responsavel?' • '+esc(i.responsavel):'')+'</div></div></div>').join('')+'</div>':'<div class="cempty" style="padding:10px;font-size:12px">Nenhuma interação registrada</div>');
+  };
+
+  // Show ficha immediately with loading state
+  document.getElementById('fichaBody').innerHTML=buildFicha('<div class="cempty" style="padding:10px;font-size:12px">Carregando...</div>','');
   openModal('mFicha');
+
+  // Fetch machines for this client (match by cliente_atual)
+  try{
+    const nome=c.nome||'';
+    if(nome){
+      const [maqR,frtR]=await Promise.all([
+        fetch(SUPA_URL+'/rest/v1/maquinas?select=modelo,numero_serie,marca,status,data_locacao,data_retorno&cliente_atual=ilike.*'+encodeURIComponent(nome)+'*&order=modelo',{headers:SH}),
+        fetch(SUPA_URL+'/rest/v1/frota_escala?select=data,veiculo_nome,operador_nome,servico,destino,status&cliente=ilike.*'+encodeURIComponent(nome)+'*&order=data.desc&limit=10',{headers:SH})
+      ]);
+      const maqs=await maqR.json();
+      const frts=await frtR.json();
+      
+      if(maqs.length){
+        maqHtml='<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">'+maqs.map(m=>
+          '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(240,243,250,.6);border-radius:8px">'
+          +'<div style="font-size:13px;font-weight:600;color:var(--navy)">'+esc(m.marca||'')+' '+esc(m.modelo||'')+'</div>'
+          +'<div style="font-size:11px;color:var(--muted)">Série: '+esc(m.numero_serie||'—')+'</div>'
+          +(m.data_retorno?'<div style="font-size:11px;color:var(--amber);margin-left:auto">Retorno: '+fd(m.data_retorno)+'</div>':'')
+          +'</div>'
+        ).join('')+'</div>';
+      }else{maqHtml='<div class="cempty" style="padding:10px;font-size:12px;margin-bottom:16px">Nenhuma máquina locada para este cliente</div>'}
+      
+      if(frts.length){
+        frtHtml='<div style="font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:16px;color:var(--navy);margin-bottom:8px;margin-top:8px">🚛 Últimos Fretes</div>'
+          +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">'+frts.map(f=>
+          '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(240,243,250,.6);border-radius:8px;flex-wrap:wrap">'
+          +'<div style="font-size:12px;font-weight:600;color:var(--navy)">'+fd(f.data)+'</div>'
+          +'<div style="font-size:12px;color:var(--text)">'+esc(f.veiculo_nome||'')+' • '+esc(f.operador_nome||'')+'</div>'
+          +'<div style="font-size:11px;color:var(--muted)">'+esc(f.servico||'')+' → '+esc(f.destino||'')+'</div>'
+          +'</div>'
+        ).join('')+'</div>';
+      }
+      
+      document.getElementById('fichaBody').innerHTML=buildFicha(maqHtml,frtHtml);
+    }
+  }catch{}
 }
 
 // ── CRUD: Cliente ──

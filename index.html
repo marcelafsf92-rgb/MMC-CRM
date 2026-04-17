@@ -275,6 +275,35 @@
         Pequenas: <b id="frResKmPeq">R$0</b> /km<br>
         Grandes: <b id="frResKmGrd">R$0</b> /km
       </div>
+
+      <!-- Fórmula -->
+      <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;color:var(--navy);margin-bottom:10px">📐 Como o cálculo funciona</div>
+        <div style="background:#f0f4ff;border-radius:10px;padding:14px;font-size:12px;line-height:1.8">
+          <div style="font-weight:700;font-size:14px;color:var(--navy);margin-bottom:8px;font-family:'Barlow Condensed',sans-serif">Valor do Km = (Diesel ÷ Km/L) × Multiplicador</div>
+          <div id="frFormulaEx" style="color:var(--text)"></div>
+        </div>
+      </div>
+
+      <!-- Multiplicador -->
+      <div style="margin-top:14px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;color:var(--navy);margin-bottom:10px">🔢 O que é o Multiplicador?</div>
+        <div style="background:#fef3c7;border-radius:10px;padding:14px;font-size:12px;line-height:1.7;color:#92400e">
+          <p style="margin-bottom:8px">O multiplicador cobre <b>todos os custos além do combustível</b>:</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;margin-bottom:8px">
+            <span>🛞 Pneus e desgaste</span><span>🔧 Manutenção veículo</span>
+            <span>👤 Motorista (hora)</span><span>📋 Seguro e documentação</span>
+            <span>🛣️ Pedágios (média)</span><span>💰 Margem de lucro</span>
+          </div>
+          <div style="border-top:1px dashed #d97706;padding-top:8px;margin-top:4px">
+            <b>Referência:</b><br>
+            2.5x → cobre só custos (sem lucro)<br>
+            3.0x → margem mínima (~15%)<br>
+            3.5x → margem saudável (~25%) ← <b>recomendado</b><br>
+            4.0x → margem alta (~35%)
+          </div>
+        </div>
+      </div>
     </div>
     <!-- Calculator Panel -->
     <div style="background:#fff;border-radius:14px;border:1px solid var(--border);padding:20px">
@@ -656,8 +685,14 @@ function getFreteParams(){
   const ribGrd=parseFloat(document.getElementById('frRibGrd').value)||1000;
   const kmPeq=(diesel/kmlPeq)*multPeq;
   const kmGrd=(diesel/kmlGrd)*multGrd;
+  const custoPeq=(diesel/kmlPeq);
+  const custoGrd=(diesel/kmlGrd);
   document.getElementById('frResKmPeq').textContent='R$'+kmPeq.toFixed(2);
   document.getElementById('frResKmGrd').textContent='R$'+kmGrd.toFixed(2);
+  // Formula examples
+  document.getElementById('frFormulaEx').innerHTML=
+    '<b style="color:var(--navy)">Pequenas:</b> R$'+diesel.toFixed(2)+' ÷ '+kmlPeq+' km/L = <b>R$'+custoPeq.toFixed(2)+'</b> (custo diesel/km) × '+multPeq+'x = <b style="color:var(--green)">R$'+kmPeq.toFixed(2)+'/km</b><br>'
+    +'<b style="color:#92400e">Grandes:</b> R$'+diesel.toFixed(2)+' ÷ '+kmlGrd+' km/L = <b>R$'+custoGrd.toFixed(2)+'</b> (custo diesel/km) × '+multGrd+'x = <b style="color:var(--green)">R$'+kmGrd.toFixed(2)+'/km</b>';
   return{diesel,kmlPeq,kmlGrd,multPeq,multGrd,ribPeq,ribGrd,kmPeq,kmGrd};
 }
 function toggleDistancia(){

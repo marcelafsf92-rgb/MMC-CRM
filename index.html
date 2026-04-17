@@ -238,7 +238,7 @@
   <div class="mbd">
     <div class="fg"><label>Empresa / Nome</label><input id="cNome" type="text" placeholder="Nome da empresa ou pessoa"></div>
     <div class="frow">
-      <div class="fg"><label>CNPJ / CPF</label><input id="cCnpj" type="text" placeholder="00.000.000/0000-00"></div>
+      <div class="fg"><label>CNPJ / CPF</label><div style="display:flex;gap:6px"><input id="cCnpj" type="text" placeholder="00.000.000/0000-00" style="flex:1"><button type="button" id="cnpjBtn" style="padding:8px 14px;border:1.5px solid var(--navy);border-radius:10px;background:var(--navy);color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap">Buscar</button></div></div>
       <div class="fg"><label>Contato (pessoa)</label><input id="cContato" type="text" placeholder="Nome do responsável"></div>
     </div>
     <div class="frow">
@@ -473,6 +473,29 @@ document.getElementById('refreshBtn').addEventListener('click',()=>{loadAll();to
 document.getElementById('btnAdd').addEventListener('click',openAddCl);
 document.getElementById('btnAddCl').addEventListener('click',openAddCl);
 document.getElementById('cSave').addEventListener('click',saveCl);
+document.getElementById('cnpjBtn').addEventListener('click',buscarCNPJ);
+async function buscarCNPJ(){
+  const raw=document.getElementById('cCnpj').value.replace(/\D/g,'');
+  if(raw.length!==14){toast('CNPJ deve ter 14 dígitos.','err');return}
+  const btn=document.getElementById('cnpjBtn');btn.textContent='...';btn.disabled=true;
+  try{
+    const r=await fetch('https://brasilapi.com.br/api/cnpj/v1/'+raw);
+    if(!r.ok)throw new Error('CNPJ não encontrado');
+    const d=await r.json();
+    if(d.razao_social)document.getElementById('cNome').value=d.razao_social;
+    if(d.ddd_telefone_1)document.getElementById('cTel').value=d.ddd_telefone_1;
+    if(d.municipio)document.getElementById('cCidade').value=d.municipio;
+    if(d.uf)document.getElementById('cEstado').value=d.uf;
+    if(d.logradouro){
+      const end=[d.logradouro,d.numero,d.bairro].filter(Boolean).join(', ');
+      document.getElementById('cEndereco').value=end;
+    }
+    // Format CNPJ
+    document.getElementById('cCnpj').value=raw.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5');
+    toast('Dados do CNPJ preenchidos!');
+  }catch(e){toast('CNPJ não encontrado.','err')}
+  finally{btn.textContent='Buscar';btn.disabled=false}
+}
 document.getElementById('iSave').addEventListener('click',saveInteracao);
 document.getElementById('searchCl').addEventListener('input',()=>render());
 document.querySelectorAll('.tbtn').forEach(b=>b.addEventListener('click',()=>{curTab=b.dataset.tab;document.querySelectorAll('.tbtn').forEach(x=>x.classList.toggle('active',x.dataset.tab===curTab));document.querySelectorAll('.tcont').forEach(x=>x.classList.toggle('active',x.id==='tab-'+curTab));render()}));

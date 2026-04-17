@@ -311,7 +311,19 @@
       <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:18px;color:var(--navy);margin-bottom:16px">🧮 Calcular Frete</div>
       <div class="fg" style="margin-bottom:12px"><label>Porte da Máquina</label><select id="frPorte"><option value="pequena">Pequena (≤20m)</option><option value="grande">Grande (≥26m)</option></select></div>
       <div class="fg" style="margin-bottom:12px"><label>Destino</label><select id="frDestino"><option value="km">Por Km (informar distância)</option><option value="ribeirao">Ribeirão Preto (preço fixo)</option></select></div>
-      <div class="fg" style="margin-bottom:12px" id="fgDistancia"><label>Distância (km) — só ida</label><input id="frKm" type="number" value="100" min="1"></div>
+      <div class="fg" style="margin-bottom:12px" id="fgDistancia">
+        <label>Destino (cidade ou endereço)</label>
+        <div style="display:flex;gap:6px">
+          <input id="frDestinoAddr" type="text" placeholder="Ex: São Paulo, Campinas, Uberlândia" style="flex:1">
+          <button type="button" onclick="buscarDistancia()" style="padding:8px 14px;border:1.5px solid var(--navy);border-radius:10px;background:var(--navy);color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap" id="frDistBtn">Buscar</button>
+        </div>
+        <div id="frDistResult" style="margin-top:6px;font-size:12px;color:var(--muted);display:none"></div>
+        <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
+          <label style="margin:0;font-size:11px;white-space:nowrap">Distância (km)</label>
+          <input id="frKm" type="number" value="100" min="1" style="width:100px;font-size:14px;padding:7px 10px">
+          <span style="font-size:11px;color:var(--muted)">só ida</span>
+        </div>
+      </div>
       <div class="fg" style="margin-bottom:12px"><label>Cobrança</label><select id="frIdaVolta"><option value="ida">Só ida</option><option value="idavolta">Ida e volta</option></select></div>
       <button onclick="calcFrete()" style="width:100%;padding:12px;background:var(--navy);color:#fff;border:none;border-radius:10px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;cursor:pointer;transition:all .15s">Calcular</button>
       <!-- Resultado -->
@@ -734,7 +746,45 @@ function getFreteParams(){
 }
 function toggleDistancia(){
   const dest=document.getElementById('frDestino').value;
-  document.getElementById('fgDistancia').style.display=dest==='km'?'flex':'none';
+  document.getElementById('fgDistancia').style.display=dest==='km'?'block':'none';
+}
+// Origin: Rua José Mancuso, 150 - Ribeirão Preto SP
+const ORIGEM_LAT=-21.1767;
+const ORIGEM_LON=-47.8208;
+async function buscarDistancia(){
+  const addr=document.getElementById('frDestinoAddr').value.trim();
+  if(!addr){toast('Informe o destino.','err');return}
+  const btn=document.getElementById('frDistBtn');
+  btn.textContent='...';btn.disabled=true;
+  const result=document.getElementById('frDistResult');
+  try{
+    // Geocode destination
+    const geoUrl='https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(addr+' Brasil')+'&format=json&limit=1';
+    const geoR=await fetch(geoUrl,{headers:{'User-Agent':'MMC-CRM'}});
+    const geoData=await geoR.json();
+    if(!geoData.length)throw new Error('Endereço não encontrado');
+    const destLat=geoData[0].lat;
+    const destLon=geoData[0].lon;
+    const destName=geoData[0].display_name.split(',').slice(0,3).join(',');
+    // Calculate route distance via OSRM
+    const routeUrl='https://router.project-osrm.org/route/v1/driving/'+ORIGEM_LON+','+ORIGEM_LAT+';'+destLon+','+destLat+'?overview=false';
+    const routeR=await fetch(routeUrl);
+    const routeData=await routeR.json();
+    if(routeData.code!=='Ok'||!routeData.routes.length)throw new Error('Rota não encontrada');
+    const distKm=Math.round(routeData.routes[0].distance/1000);
+    const durMin=Math.round(routeData.routes[0].duration/60);
+    const durH=Math.floor(durMin/60);
+    const durM=durMin%60;
+    document.getElementById('frKm').value=distKm;
+    result.innerHTML='📍 <b>'+esc(destName)+'</b><br>🛣️ '+distKm+'km • ⏱️ '+(durH?durH+'h':'')+(durM?durM+'min':'');
+    result.style.display='block';
+    result.style.background='#d1fae5';result.style.padding='8px 12px';result.style.borderRadius='8px';result.style.color='#065f46';
+    toast(distKm+'km até '+addr);
+  }catch(e){
+    result.innerHTML='❌ '+esc(e.message||'Erro ao buscar');
+    result.style.display='block';
+    result.style.background='#fee2e2';result.style.padding='8px 12px';result.style.borderRadius='8px';result.style.color='#991b1b';
+  }finally{btn.textContent='Buscar';btn.disabled=false}
 }
 async function saveFreteConfig(){
   const cfg={diesel:document.getElementById('frDiesel').value,kmlPeq:document.getElementById('frKmlPeq').value,kmlGrd:document.getElementById('frKmlGrd').value,multPeq:document.getElementById('frMultPeq').value,multGrd:document.getElementById('frMultGrd').value,ribPeq:document.getElementById('frRibPeq').value,ribGrd:document.getElementById('frRibGrd').value};

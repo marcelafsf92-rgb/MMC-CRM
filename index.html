@@ -275,7 +275,7 @@
         Pequenas: <b id="frResKmPeq">R$0</b> /km<br>
         Grandes: <b id="frResKmGrd">R$0</b> /km
       </div>
-      
+      <button id="frSaveBtn" onclick="saveFreteConfig()" style="display:none;margin-top:12px;width:100%;padding:10px;background:var(--green);color:#fff;border:none;border-radius:10px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;cursor:pointer">Salvar Configuração</button>
 
       <!-- Fórmula -->
       <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
@@ -741,7 +741,7 @@ function getFreteParams(){
     '<b style="color:var(--navy)">Pequenas:</b> R$'+diesel.toFixed(2)+' ÷ '+kmlPeq+' km/L = <b>R$'+custoPeq.toFixed(2)+'</b> (custo diesel/km) × '+multPeq+'x = <b style="color:var(--green)">R$'+kmPeq.toFixed(2)+'/km</b><br>'
     +'<b style="color:#92400e">Grandes:</b> R$'+diesel.toFixed(2)+' ÷ '+kmlGrd+' km/L = <b>R$'+custoGrd.toFixed(2)+'</b> (custo diesel/km) × '+multGrd+'x = <b style="color:var(--green)">R$'+kmGrd.toFixed(2)+'/km</b>';
   // Show save button when values change
-  
+  try{document.getElementById('frSaveBtn').style.display='block'}catch{}
   return{diesel,kmlPeq,kmlGrd,multPeq,multGrd,ribPeq,ribGrd,kmPeq,kmGrd};
 }
 function toggleDistancia(){

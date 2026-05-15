@@ -656,10 +656,16 @@ let PRECOS=JSON.parse(localStorage.getItem('mmc_precos'))||JSON.parse(JSON.strin
 let editingPrecos=false;
 function fmtR(n){if(!n||n===0)return'—';return'R$'+n.toLocaleString('pt-BR')}
 function renderPrecos(){
+  const grid=document.getElementById('precosGrid');
+  // Apenas editores podem ver os valores
+  if(!isEditor){
+    grid.innerHTML='<div class="cempty" style="padding:60px 20px;text-align:center"><div style="font-size:48px;margin-bottom:12px">🔒</div><div style="font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:20px;color:var(--navy);margin-bottom:6px">Acesso restrito</div><div style="color:var(--muted);font-size:13px;max-width:280px;margin:0 auto">A tabela de preços só fica visível no modo Editor. Clique no botão no topo para entrar com a senha.</div></div>';
+    document.getElementById('btnEditPrecos').style.display='none';
+    return;
+  }
   const q=(document.getElementById('searchPreco').value||'').toLowerCase();
   const filtered=q?PRECOS.filter(p=>p.nome.toLowerCase().includes(q)||p.cat.toLowerCase().includes(q)):PRECOS;
-  const grid=document.getElementById('precosGrid');
-  if(isEditor)document.getElementById('btnEditPrecos').style.display='flex';
+  document.getElementById('btnEditPrecos').style.display='flex';
   if(!filtered.length){grid.innerHTML='<div class="cempty">Nenhuma máquina encontrada</div>';return}
   const catColors={plataforma:'var(--navy)',munck:'#92400e',guindaste:'#5b21b6'};
   const catLabels={plataforma:'🏗 PLATAFORMAS',munck:'🏗 MUNCKS',guindaste:'⬆ GUINDASTES'};
@@ -867,7 +873,7 @@ function initFrete(){
 }
 
 // ── Events ──
-document.getElementById('modeBtn').addEventListener('click',()=>{if(!isEditor)checkEditor();else{isEditor=false;sessionStorage.removeItem('mmc_crm_editor');applyMode();toast('Modo visualização')}});
+document.getElementById('modeBtn').addEventListener('click',()=>{if(!isEditor){checkEditor();if(curTab==='precos')renderPrecos()}else{isEditor=false;sessionStorage.removeItem('mmc_crm_editor');applyMode();toast('Modo visualização');if(curTab==='precos')renderPrecos()}});
 document.getElementById('refreshBtn').addEventListener('click',()=>{loadAll();toast('Atualizando...')});
 document.getElementById('btnAdd').addEventListener('click',openAddCl);
 document.getElementById('btnAddCl').addEventListener('click',openAddCl);

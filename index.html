@@ -374,7 +374,7 @@
     <input id="mFiltroBusca" type="search" placeholder="Buscar por marca, modelo..." style="flex:1;min-width:200px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:#fff;font-family:inherit">
   </div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Catálogo de equipamentos com fichas técnicas e manuais. Cada equipamento gera um link público que pode ser enviado a clientes — eles veem só a ficha daquele item, sem acesso ao painel.</p>
-  <div id="mGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px"></div>
+  <div id="mGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px"></div>
 </div></div>
 
 <!-- Modal: Manual (cadastro/edição) -->
@@ -1014,7 +1014,7 @@ function renderManuais(){
   grid.innerHTML=filt.map(m=>{
     const link=window.location.origin+window.location.pathname+'?manual='+encodeURIComponent(m.slug);
     return '<div style="background:#fff;border-radius:14px;border:1px solid var(--border);overflow:hidden;display:flex;flex-direction:column">'+
-      (m.foto_url?'<img src="'+esc(m.foto_url)+'" alt="" style="width:100%;height:140px;object-fit:cover;background:#f1f5f9">':'<div style="height:140px;background:linear-gradient(135deg,#e0e7ff,#c7d2fe);display:flex;align-items:center;justify-content:center;color:var(--navy);font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:22px">📋 sem foto</div>')+
+      (m.foto_url?'<div style="background:#f1f5f9;display:flex;align-items:center;justify-content:center;height:220px;padding:8px"><img src="'+esc(m.foto_url)+'" alt="" style="max-width:100%;max-height:100%;object-fit:contain"></div>':'<div style="height:220px;background:linear-gradient(135deg,#e0e7ff,#c7d2fe);display:flex;align-items:center;justify-content:center;color:var(--navy);font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:22px">📋 sem foto</div>')+
       '<div style="padding:14px 16px;flex:1;display:flex;flex-direction:column">'+
       '<div style="font-size:10px;color:var(--gold);font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:2px">'+esc(m.tipo||'—')+'</div>'+
       '<div style="font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:18px;color:var(--navy);line-height:1.1">'+esc(m.marca||'')+' '+esc(m.modelo||'')+'</div>'+
@@ -1180,7 +1180,7 @@ function renderPublicManual(m){
   const msg=encodeURIComponent('Olá! Tenho interesse em locar a '+(m.marca||'')+' '+(m.modelo||'')+'. Pode me passar mais informações?');
   const wppUrl='https://wa.me/5516993190466?text='+msg;
   const html=
-    (m.foto_url?'<img src="'+esc(m.foto_url)+'" alt="'+esc(m.modelo)+'" style="width:100%;max-height:380px;object-fit:cover;background:#f1f5f9">':'')+
+    (m.foto_url?'<div style="background:#f1f5f9;display:flex;align-items:center;justify-content:center;padding:16px"><img src="'+esc(m.foto_url)+'" alt="'+esc(m.modelo)+'" style="max-width:100%;max-height:420px;object-fit:contain"></div>':'')+
     '<div style="padding:24px 28px">'+
     '<div style="font-size:12px;color:var(--gold);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">'+esc(m.tipo||'Equipamento')+'</div>'+
     '<h1 style="font-family:Barlow Condensed,sans-serif;font-weight:800;font-size:36px;color:var(--navy);margin:0 0 4px;line-height:1">'+esc(m.marca||'')+' '+esc(m.modelo||'')+'</h1>'+

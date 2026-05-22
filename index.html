@@ -194,6 +194,24 @@
 <div id="loadBar"></div>
 <div id="toast"></div>
 
+<!-- View pública do manual (oculta por default, ativada via ?manual=X na URL) -->
+<div id="publicManualView" style="display:none;min-height:100vh;background:linear-gradient(135deg,#d4ddf0 0%,#e8edf8 40%,#f0f3fa 100%);padding:24px 16px">
+  <div style="max-width:780px;margin:0 auto">
+    <div style="background:var(--navy);color:#fff;border-radius:16px;padding:18px 24px;margin-bottom:18px;display:flex;align-items:center;gap:14px;box-shadow:0 8px 28px rgba(0,0,0,.18)">
+      <img src="logo-header.png" alt="MMC Locações" style="height:42px">
+      <div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:22px;line-height:1">MMC LOCAÇÕES</div>
+        <div style="font-size:12px;opacity:.75">Plataformas elevatórias, muncks e guindastes · Ribeirão Preto/SP</div>
+      </div>
+    </div>
+    <div id="publicManualBody" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 8px 28px rgba(0,0,0,.10)"></div>
+    <div style="margin-top:16px;text-align:center;font-size:11px;color:var(--muted)">© MMC Locações · <a href="https://wa.me/5516993190466" style="color:var(--navy);font-weight:600;text-decoration:none">WhatsApp (16) 99319-0466</a></div>
+  </div>
+</div>
+
+<!-- View do painel (oculta quando view pública estiver ativa) -->
+<div id="painelView">
+
 <header class="hdr"><div class="hdr-in">
   <div class="hdr-brand">
     <img src="logo-header.png" alt="MMC CRM" class="hdr-logo">
@@ -211,6 +229,7 @@
   <button class="tbtn" data-tab="clientes">Clientes <span class="tc" id="tcC">0</span></button>
   <button class="tbtn" data-tab="precos">Tabela de Preços</button>
   <button class="tbtn" data-tab="frete">Calculadora Frete</button>
+  <button class="tbtn" data-tab="manuais">Manuais <span class="tc" id="tcM">0</span></button>
 </div></div>
 
 <div class="dash" id="dashboard">
@@ -344,6 +363,62 @@
   </div>
 </div></div>
 
+<!-- Tab: Manuais -->
+<div class="tcont" id="tab-manuais"><div class="bwrap">
+  <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+    <button class="btn-gold" onclick="openAddManual()" style="background:var(--gold);color:#78350f;border:none;border-radius:10px;padding:10px 18px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:6px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:16px;height:16px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Novo Manual
+    </button>
+    <select id="mFiltroTipo" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:#fff;font-family:inherit"><option value="">Todos os tipos</option><option>Plataforma Articulada</option><option>Plataforma Tesoura</option><option>Plataforma Telescópica</option><option>Munck</option><option>Guindaste</option><option>Outro</option></select>
+    <input id="mFiltroBusca" type="search" placeholder="Buscar por marca, modelo..." style="flex:1;min-width:200px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:#fff;font-family:inherit">
+  </div>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Catálogo de equipamentos com fichas técnicas e manuais. Cada equipamento gera um link público que pode ser enviado a clientes — eles veem só a ficha daquele item, sem acesso ao painel.</p>
+  <div id="mGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px"></div>
+</div></div>
+
+<!-- Modal: Manual (cadastro/edição) -->
+<div class="mbg" id="mManual"><div class="modal" style="max-width:780px">
+  <div class="mhd"><span class="mtitle" id="mManualTitle">Novo Manual</span><button class="mx" onclick="closeModal('mManual')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+  <div class="mbd">
+    <div class="frow">
+      <div class="fg"><label>Marca *</label><input id="manMarca" type="text" placeholder="JLG, Haulotte, Genie, Manitou..."></div>
+      <div class="fg"><label>Modelo *</label><input id="manModelo" type="text" placeholder="450AJ, HA16SPX, ES3246..."></div>
+    </div>
+    <div class="fg"><label>Tipo</label><select id="manTipo"><option>Plataforma Articulada</option><option>Plataforma Tesoura</option><option>Plataforma Telescópica</option><option>Munck</option><option>Guindaste</option><option>Outro</option></select></div>
+    <div class="fg"><label>Descrição / Apresentação</label><textarea id="manDescricao" rows="2" placeholder="Texto curto que aparece na ficha pública (opcional)"></textarea></div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;color:var(--navy);margin:14px 0 6px;border-top:1px solid var(--border);padding-top:12px">Especificações técnicas</div>
+    <div class="frow">
+      <div class="fg"><label>Capacidade (kg)</label><input id="manCapacidade" type="text" placeholder="230"></div>
+      <div class="fg"><label>Altura de Trabalho (m)</label><input id="manAlturaTrab" type="text" placeholder="15.7"></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>Altura da Plataforma (m)</label><input id="manAlturaPlat" type="text" placeholder="13.7"></div>
+      <div class="fg"><label>Alcance Horizontal (m)</label><input id="manAlcance" type="text" placeholder="7.5"></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>Peso (kg)</label><input id="manPeso" type="text" placeholder="6800"></div>
+      <div class="fg"><label>Dimensões (C×L×A)</label><input id="manDimensoes" type="text" placeholder="6.4 × 2.3 × 2.0 m"></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>Motor</label><select id="manMotor"><option value="">--</option><option>Diesel</option><option>Elétrico</option><option>Bi-energy</option><option>Gás</option><option>Híbrido</option></select></div>
+      <div class="fg"><label>Tração</label><select id="manTracao"><option value="">--</option><option>4x4</option><option>2x4</option><option>—</option></select></div>
+    </div>
+    <div class="fg"><label>Alimentação / Detalhes adicionais</label><input id="manAlimentacao" type="text" placeholder="220V, 380V, etc"></div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;color:var(--navy);margin:14px 0 6px;border-top:1px solid var(--border);padding-top:12px">Mídia</div>
+    <div class="fg"><label>Foto do equipamento</label>
+      <input id="manFotoFile" type="file" accept="image/jpeg,image/png,image/webp">
+      <div id="manFotoPreview" style="margin-top:8px;display:none"><img id="manFotoImg" style="max-width:200px;max-height:140px;border-radius:8px;border:1px solid var(--border)"><div style="font-size:11px;color:var(--muted);margin-top:4px"><a id="manFotoUrl" href="#" target="_blank">Ver foto atual</a> · <button type="button" onclick="removeManFoto()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:11px;text-decoration:underline">Remover</button></div></div>
+    </div>
+    <div class="fg"><label>PDF do manual (fabricante)</label>
+      <input id="manPdfFile" type="file" accept="application/pdf">
+      <div id="manPdfPreview" style="margin-top:8px;display:none;font-size:12px"><a id="manPdfUrl" href="#" target="_blank" style="color:var(--navy);font-weight:600">📄 Ver PDF atual</a> · <button type="button" onclick="removeManPdf()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:11px;text-decoration:underline">Remover</button></div>
+    </div>
+    <div class="fg" style="margin-top:14px"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input id="manPublico" type="checkbox" checked> <span>Visível no link público (desmarcar = oculto)</span></label></div>
+  </div>
+  <div class="mft"><button class="btnc" onclick="closeModal('mManual')">Cancelar</button><button class="btns" id="manSave">Salvar</button></div>
+</div></div>
+
 <!-- Modal: Cliente/Lead -->
 <div class="mbg" id="mCliente"><div class="modal">
   <div class="mhd"><span class="mtitle" id="mClTitle">Novo Lead</span><button class="mx" onclick="closeModal('mCliente')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
@@ -400,8 +475,9 @@ const SH={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'a
 const EDIT_PASS='Mmc2026';
 
 // ── State ──
-let C=[],I=[];
-let editClId=null,interClId=null;
+let C=[],I=[],M=[];
+let editClId=null,interClId=null,editManId=null;
+let manFotoUrl='',manPdfUrl='';
 let curTab='pipeline';
 let isEditor=sessionStorage.getItem('mmc_crm_editor')==='true';
 
@@ -628,7 +704,11 @@ async function bgSync(){
 }
 async function loadAll(){
   setLoading(true);
-  try{const [c,i]=await Promise.all([sGet('crm_clientes'),sGet('crm_interacoes')]);C=c;I=i;render();loadPrecos()}
+  try{
+    const [c,i,m]=await Promise.all([sGet('crm_clientes'),sGet('crm_interacoes'),sGet('manuais')]);
+    C=c;I=i;M=Array.isArray(m)?m:[];
+    render();renderManuais();loadPrecos();
+  }
   catch{toast('Erro ao carregar.','err')}
   finally{setLoading(false)}
 }
@@ -904,12 +984,215 @@ async function buscarCNPJ(){
 document.getElementById('iSave').addEventListener('click',saveInteracao);
 document.getElementById('searchCl').addEventListener('input',()=>render());
 document.getElementById('searchPreco').addEventListener('input',()=>renderPrecos());
-document.querySelectorAll('.tbtn').forEach(b=>b.addEventListener('click',()=>{curTab=b.dataset.tab;document.querySelectorAll('.tbtn').forEach(x=>x.classList.toggle('active',x.dataset.tab===curTab));document.querySelectorAll('.tcont').forEach(x=>x.classList.toggle('active',x.id==='tab-'+curTab));if(curTab==='precos')renderPrecos();else if(curTab==='frete')initFrete();else render()}));
+document.querySelectorAll('.tbtn').forEach(b=>b.addEventListener('click',()=>{curTab=b.dataset.tab;document.querySelectorAll('.tbtn').forEach(x=>x.classList.toggle('active',x.dataset.tab===curTab));document.querySelectorAll('.tcont').forEach(x=>x.classList.toggle('active',x.id==='tab-'+curTab));if(curTab==='precos')renderPrecos();else if(curTab==='frete')initFrete();else if(curTab==='manuais')renderManuais();else render()}));
+document.getElementById('mFiltroTipo').addEventListener('change',renderManuais);
+let _mBuscaTimer;document.getElementById('mFiltroBusca').addEventListener('input',()=>{clearTimeout(_mBuscaTimer);_mBuscaTimer=setTimeout(renderManuais,200)});
+document.getElementById('manSave').addEventListener('click',saveManual);
+
+// ── CRUD Manuais ──
+function makeSlug(marca,modelo){
+  const s=((marca||'')+' '+(modelo||'')).toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  return s||('manual-'+Date.now().toString(36));
+}
+function renderManuais(){
+  const ftT=document.getElementById('mFiltroTipo')?.value||'';
+  const ftB=(document.getElementById('mFiltroBusca')?.value||'').toLowerCase().trim();
+  const filt=M.filter(m=>{
+    if(ftT && m.tipo!==ftT)return false;
+    if(ftB){
+      const hay=((m.marca||'')+' '+(m.modelo||'')+' '+(m.tipo||'')+' '+(m.descricao||'')).toLowerCase();
+      if(!hay.includes(ftB))return false;
+    }
+    return true;
+  }).sort((a,b)=>(a.ordem||0)-(b.ordem||0)||(a.marca||'').localeCompare(b.marca||''));
+  const tcM=document.getElementById('tcM');if(tcM)tcM.textContent=M.length;
+  const grid=document.getElementById('mGrid');
+  if(!grid)return;
+  if(!filt.length){grid.innerHTML='<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--muted)">'+(M.length?'Nenhum manual com esses filtros':'Nenhum manual cadastrado ainda. Clique em "Novo Manual" para começar.')+'</div>';return}
+  grid.innerHTML=filt.map(m=>{
+    const link=window.location.origin+window.location.pathname+'?manual='+encodeURIComponent(m.slug);
+    return '<div style="background:#fff;border-radius:14px;border:1px solid var(--border);overflow:hidden;display:flex;flex-direction:column">'+
+      (m.foto_url?'<img src="'+esc(m.foto_url)+'" alt="" style="width:100%;height:140px;object-fit:cover;background:#f1f5f9">':'<div style="height:140px;background:linear-gradient(135deg,#e0e7ff,#c7d2fe);display:flex;align-items:center;justify-content:center;color:var(--navy);font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:22px">📋 sem foto</div>')+
+      '<div style="padding:14px 16px;flex:1;display:flex;flex-direction:column">'+
+      '<div style="font-size:10px;color:var(--gold);font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:2px">'+esc(m.tipo||'—')+'</div>'+
+      '<div style="font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:18px;color:var(--navy);line-height:1.1">'+esc(m.marca||'')+' '+esc(m.modelo||'')+'</div>'+
+      (m.descricao?'<div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+esc(m.descricao)+'</div>':'')+
+      '<div style="display:flex;gap:6px;margin-top:auto;padding-top:12px;flex-wrap:wrap">'+
+      '<button onclick="copyPublicLink(\''+esc(m.slug)+'\')" style="flex:1;min-width:90px;padding:6px 10px;border:1.5px solid var(--navy);background:#fff;color:var(--navy);border-radius:8px;font-size:11px;font-weight:600;cursor:pointer">🔗 Copiar link</button>'+
+      '<button onclick="editManual(\''+esc(m.id)+'\')" style="padding:6px 12px;border:none;background:var(--navy);color:#fff;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer">Editar</button>'+
+      '<button onclick="delManual(\''+esc(m.id)+'\')" style="padding:6px 8px;border:none;background:#fee2e2;color:var(--red);border-radius:8px;font-size:11px;font-weight:600;cursor:pointer">🗑</button>'+
+      '</div>'+
+      (m.publico?'':'<div style="margin-top:6px;font-size:10px;color:var(--muted);font-style:italic">⚠️ Oculto do link público</div>')+
+      '</div></div>';
+  }).join('');
+}
+function copyPublicLink(slug){
+  const link=window.location.origin+window.location.pathname+'?manual='+encodeURIComponent(slug);
+  navigator.clipboard.writeText(link).then(()=>toast('Link copiado: '+link)).catch(()=>{
+    prompt('Link público (copie manualmente):',link);
+  });
+}
+function openAddManual(){
+  if(!isEditor)return checkEditor();
+  editManId=null;manFotoUrl='';manPdfUrl='';
+  ['manMarca','manModelo','manDescricao','manCapacidade','manAlturaTrab','manAlturaPlat','manAlcance','manPeso','manDimensoes','manAlimentacao'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('manTipo').value='Plataforma Articulada';
+  document.getElementById('manMotor').value='';document.getElementById('manTracao').value='';
+  document.getElementById('manPublico').checked=true;
+  document.getElementById('manFotoFile').value='';document.getElementById('manPdfFile').value='';
+  document.getElementById('manFotoPreview').style.display='none';
+  document.getElementById('manPdfPreview').style.display='none';
+  document.getElementById('mManualTitle').textContent='Novo Manual';
+  openModal('mManual');
+}
+function editManual(id){
+  if(!isEditor)return checkEditor();
+  const m=M.find(x=>x.id===id);if(!m)return;
+  editManId=id;manFotoUrl=m.foto_url||'';manPdfUrl=m.pdf_url||'';
+  document.getElementById('manMarca').value=m.marca||'';
+  document.getElementById('manModelo').value=m.modelo||'';
+  document.getElementById('manTipo').value=m.tipo||'Plataforma Articulada';
+  document.getElementById('manDescricao').value=m.descricao||'';
+  document.getElementById('manCapacidade').value=m.capacidade_kg||'';
+  document.getElementById('manAlturaTrab').value=m.altura_trabalho_m||'';
+  document.getElementById('manAlturaPlat').value=m.altura_plataforma_m||'';
+  document.getElementById('manAlcance').value=m.alcance_horizontal_m||'';
+  document.getElementById('manPeso').value=m.peso_kg||'';
+  document.getElementById('manDimensoes').value=m.dimensoes||'';
+  document.getElementById('manMotor').value=m.motor||'';
+  document.getElementById('manTracao').value=m.tracao||'';
+  document.getElementById('manAlimentacao').value=m.alimentacao||'';
+  document.getElementById('manPublico').checked=m.publico!==false;
+  document.getElementById('manFotoFile').value='';document.getElementById('manPdfFile').value='';
+  if(manFotoUrl){document.getElementById('manFotoImg').src=manFotoUrl;document.getElementById('manFotoUrl').href=manFotoUrl;document.getElementById('manFotoPreview').style.display='block'}
+  else document.getElementById('manFotoPreview').style.display='none';
+  if(manPdfUrl){document.getElementById('manPdfUrl').href=manPdfUrl;document.getElementById('manPdfPreview').style.display='block'}
+  else document.getElementById('manPdfPreview').style.display='none';
+  document.getElementById('mManualTitle').textContent='Editar Manual';
+  openModal('mManual');
+}
+function removeManFoto(){manFotoUrl='';document.getElementById('manFotoPreview').style.display='none';toast('Foto removida (salve para confirmar)')}
+function removeManPdf(){manPdfUrl='';document.getElementById('manPdfPreview').style.display='none';toast('PDF removido (salve para confirmar)')}
+async function uploadStorage(file,prefix){
+  const ext=(file.name.split('.').pop()||'bin').toLowerCase();
+  const path=prefix+'-'+Date.now().toString(36)+'.'+ext;
+  const r=await fetch(SUPA_URL+'/storage/v1/object/manuais/'+path,{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':file.type||'application/octet-stream'},body:file});
+  if(!r.ok)throw new Error('Upload falhou: '+r.status);
+  return SUPA_URL+'/storage/v1/object/public/manuais/'+path;
+}
+async function saveManual(){
+  const marca=document.getElementById('manMarca').value.trim();
+  const modelo=document.getElementById('manModelo').value.trim();
+  if(!marca||!modelo){toast('Informe marca e modelo.','err');return}
+  const btn=document.getElementById('manSave');btn.disabled=true;btn.textContent='Salvando...';
+  try{
+    let fotoUrl=manFotoUrl,pdfUrl=manPdfUrl;
+    const fotoFile=document.getElementById('manFotoFile').files[0];
+    const pdfFile=document.getElementById('manPdfFile').files[0];
+    if(fotoFile){btn.textContent='Enviando foto...';fotoUrl=await uploadStorage(fotoFile,'foto')}
+    if(pdfFile){btn.textContent='Enviando PDF...';pdfUrl=await uploadStorage(pdfFile,'pdf')}
+    btn.textContent='Salvando...';
+    const slugBase=editManId?(M.find(x=>x.id===editManId)?.slug||makeSlug(marca,modelo)):makeSlug(marca,modelo);
+    const d={
+      id:editManId||uid(),
+      slug:slugBase,
+      marca:marca,modelo:modelo,
+      tipo:document.getElementById('manTipo').value,
+      descricao:document.getElementById('manDescricao').value.trim(),
+      capacidade_kg:document.getElementById('manCapacidade').value.trim(),
+      altura_trabalho_m:document.getElementById('manAlturaTrab').value.trim(),
+      altura_plataforma_m:document.getElementById('manAlturaPlat').value.trim(),
+      alcance_horizontal_m:document.getElementById('manAlcance').value.trim(),
+      peso_kg:document.getElementById('manPeso').value.trim(),
+      dimensoes:document.getElementById('manDimensoes').value.trim(),
+      motor:document.getElementById('manMotor').value,
+      tracao:document.getElementById('manTracao').value,
+      alimentacao:document.getElementById('manAlimentacao').value.trim(),
+      foto_url:fotoUrl,pdf_url:pdfUrl,
+      publico:document.getElementById('manPublico').checked,
+      updated_at:new Date().toISOString()
+    };
+    const eid=editManId;
+    const r=eid?await sPatch('manuais',eid,d):await sPost('manuais',d);
+    if(!r.ok){const err=await r.text();throw new Error(err)}
+    const idx=M.findIndex(x=>x.id===d.id);if(idx>=0)M[idx]={...M[idx],...d};else M.push(d);
+    closeModal('mManual');renderManuais();
+    toast(eid?'Manual atualizado!':'Manual cadastrado!');
+  }catch(e){console.error(e);toast('Erro ao salvar: '+(e.message||'').slice(0,60),'err')}
+  finally{btn.disabled=false;btn.textContent='Salvar'}
+}
+async function delManual(id){
+  if(!isEditor)return checkEditor();
+  const m=M.find(x=>x.id===id);if(!m)return;
+  if(!confirm('Remover manual "'+(m.marca||'')+' '+(m.modelo||'')+'"?\nO link público vai parar de funcionar.'))return;
+  try{
+    await sDel('manuais',id);
+    M=M.filter(x=>x.id!==id);renderManuais();
+    toast('Manual removido.');
+  }catch{toast('Erro ao remover.','err')}
+}
 document.querySelectorAll('.mbg').forEach(bg=>bg.addEventListener('click',e=>{if(e.target===bg)bg.classList.remove('open')}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.mbg.open').forEach(m=>m.classList.remove('open'))});
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 if(new URLSearchParams(window.location.search).get('auth')===EDIT_PASS){isEditor=true;sessionStorage.setItem('mmc_crm_editor','true')}
-applyMode();loadAll();
+
+// ── PUBLIC MANUAL VIEW ──
+// Quando URL tem ?manual=slug, esconde o painel e mostra so a ficha publica.
+const _publicSlug=new URLSearchParams(window.location.search).get('manual');
+if(_publicSlug){
+  document.getElementById('painelView').style.display='none';
+  document.getElementById('publicManualView').style.display='block';
+  loadPublicManual(_publicSlug);
+} else {
+  applyMode();loadAll();
+}
+
+async function loadPublicManual(slug){
+  document.getElementById('publicManualBody').innerHTML='<div style="padding:60px 24px;text-align:center;color:var(--muted)">Carregando ficha técnica...</div>';
+  try{
+    const r=await fetch(SUPA_URL+'/rest/v1/manuais?slug=eq.'+encodeURIComponent(slug)+'&publico=eq.true&select=*',{headers:SH});
+    const arr=await r.json();
+    if(!arr.length){
+      document.getElementById('publicManualBody').innerHTML='<div style="padding:60px 24px;text-align:center"><div style="font-family:Barlow Condensed,sans-serif;font-size:24px;color:var(--navy);margin-bottom:8px">Manual não encontrado</div><div style="color:var(--muted);font-size:14px">Verifique o link ou entre em contato com a MMC.</div><a href="https://wa.me/5516993190466" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#25D366;color:#fff;border-radius:10px;font-weight:600;text-decoration:none">📱 Falar no WhatsApp</a></div>';
+      return;
+    }
+    renderPublicManual(arr[0]);
+    document.title='MMC — '+(arr[0].marca||'')+' '+(arr[0].modelo||'');
+  } catch(e){
+    document.getElementById('publicManualBody').innerHTML='<div style="padding:40px;text-align:center;color:var(--red)">Erro ao carregar. Tente novamente.</div>';
+  }
+}
+
+function renderPublicManual(m){
+  const specs=[
+    ['Capacidade',m.capacidade_kg?m.capacidade_kg+' kg':null],
+    ['Altura de Trabalho',m.altura_trabalho_m?m.altura_trabalho_m+' m':null],
+    ['Altura da Plataforma',m.altura_plataforma_m?m.altura_plataforma_m+' m':null],
+    ['Alcance Horizontal',m.alcance_horizontal_m?m.alcance_horizontal_m+' m':null],
+    ['Peso',m.peso_kg?m.peso_kg+' kg':null],
+    ['Dimensões',m.dimensoes],
+    ['Motor',m.motor],
+    ['Tração',m.tracao],
+    ['Alimentação',m.alimentacao]
+  ].filter(x=>x[1]);
+  const msg=encodeURIComponent('Olá! Tenho interesse em locar a '+(m.marca||'')+' '+(m.modelo||'')+'. Pode me passar mais informações?');
+  const wppUrl='https://wa.me/5516993190466?text='+msg;
+  const html=
+    (m.foto_url?'<img src="'+esc(m.foto_url)+'" alt="'+esc(m.modelo)+'" style="width:100%;max-height:380px;object-fit:cover;background:#f1f5f9">':'')+
+    '<div style="padding:24px 28px">'+
+    '<div style="font-size:12px;color:var(--gold);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">'+esc(m.tipo||'Equipamento')+'</div>'+
+    '<h1 style="font-family:Barlow Condensed,sans-serif;font-weight:800;font-size:36px;color:var(--navy);margin:0 0 4px;line-height:1">'+esc(m.marca||'')+' '+esc(m.modelo||'')+'</h1>'+
+    (m.descricao?'<p style="font-size:15px;color:var(--text);line-height:1.5;margin:12px 0 16px">'+esc(m.descricao)+'</p>':'<div style="height:12px"></div>')+
+    (specs.length?'<div style="font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:18px;color:var(--navy);margin:18px 0 10px;border-top:1px solid var(--border);padding-top:14px">Especificações</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">'+specs.map(([k,v])=>'<div style="background:#f0f4ff;border-radius:10px;padding:12px 14px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">'+esc(k)+'</div><div style="font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:18px;color:var(--navy)">'+esc(v)+'</div></div>').join('')+'</div>':'')+
+    '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:24px">'+
+    '<a href="'+wppUrl+'" target="_blank" style="flex:1;min-width:200px;background:#25D366;color:#fff;border-radius:12px;padding:14px 20px;text-align:center;text-decoration:none;font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:17px;display:flex;align-items:center;justify-content:center;gap:8px"><svg viewBox="0 0 24 24" fill="currentColor" style="width:20px;height:20px"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-1-.3-.1-.5-.2-.7.2-.2.3-.7 1-.9 1.2-.2.2-.3.2-.6.1-.3-.2-1.2-.5-2.3-1.4-.9-.7-1.4-1.7-1.6-2-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.1-.1.2-.3.3-.4.1-.2 0-.3 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5.1 4.5 1.8.8 2.5.8 3.4.7.5-.1 1.7-.7 1.9-1.4.2-.7.2-1.3.2-1.4-.1-.2-.3-.2-.6-.4zM12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.4c1.5.8 3.1 1.2 4.8 1.2 5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg> Pedir Orçamento</a>'+
+    (m.pdf_url?'<a href="'+esc(m.pdf_url)+'" target="_blank" style="background:var(--navy);color:#fff;border-radius:12px;padding:14px 20px;text-align:center;text-decoration:none;font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:17px;display:flex;align-items:center;justify-content:center;gap:8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Baixar Manual (PDF)</a>':'')+
+    '</div></div>';
+  document.getElementById('publicManualBody').innerHTML=html;
+}
 </script>
+</div><!-- /painelView -->
 </body>
 </html>

@@ -1028,8 +1028,11 @@ function renderManuais(){
       '</div></div>';
   }).join('');
 }
+// URL base do catalogo publico (dominio separado do CRM por seguranca).
+// Cliente que receber esse link nao tem acesso a nada do CRM.
+const CATALOGO_URL='https://mmc-catalogo.vercel.app';
 function copyPublicLink(slug){
-  const link=window.location.origin+window.location.pathname+'?manual='+encodeURIComponent(slug);
+  const link=CATALOGO_URL+'/?manual='+encodeURIComponent(slug);
   navigator.clipboard.writeText(link).then(()=>toast('Link copiado: '+link)).catch(()=>{
     prompt('Link público (copie manualmente):',link);
   });

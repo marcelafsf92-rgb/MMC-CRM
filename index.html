@@ -1097,7 +1097,13 @@ async function saveManual(){
     if(fotoFile){btn.textContent='Enviando foto...';fotoUrl=await uploadStorage(fotoFile,'foto')}
     if(pdfFile){btn.textContent='Enviando PDF...';pdfUrl=await uploadStorage(pdfFile,'pdf')}
     btn.textContent='Salvando...';
-    const slugBase=editManId?(M.find(x=>x.id===editManId)?.slug||makeSlug(marca,modelo)):makeSlug(marca,modelo);
+    let slugBase=editManId?(M.find(x=>x.id===editManId)?.slug||makeSlug(marca,modelo)):makeSlug(marca,modelo);
+    // Slug ja usado por OUTRO manual (mesma marca+modelo)? Sufixa -2, -3... evita unique violation
+    if(!editManId){
+      let s=slugBase,n=2;
+      while(M.some(x=>x.slug===s)){s=slugBase+'-'+n;n++}
+      slugBase=s;
+    }
     const d={
       id:editManId||uid(),
       slug:slugBase,
@@ -1142,12 +1148,12 @@ if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.ser
 if(new URLSearchParams(window.location.search).get('auth')===EDIT_PASS){isEditor=true;sessionStorage.setItem('mmc_crm_editor','true')}
 
 // ── PUBLIC MANUAL VIEW ──
-// Quando URL tem ?manual=slug, esconde o painel e mostra so a ficha publica.
+// Links publicos agora vivem no dominio dedicado mmc-catalogo.vercel.app.
+// ?manual=X aqui (links antigos enviados a clientes) redireciona pra la —
+// garante que cliente NUNCA fica no dominio do CRM e ve sempre o layout oficial.
 const _publicSlug=new URLSearchParams(window.location.search).get('manual');
 if(_publicSlug){
-  document.getElementById('painelView').style.display='none';
-  document.getElementById('publicManualView').style.display='block';
-  loadPublicManual(_publicSlug);
+  window.location.replace(CATALOGO_URL+'/?manual='+encodeURIComponent(_publicSlug));
 } else {
   applyMode();loadAll();
 }

@@ -229,6 +229,7 @@
   <button class="tbtn" data-tab="clientes">Clientes <span class="tc" id="tcC">0</span></button>
   <button class="tbtn" data-tab="precos">Tabela de Preços</button>
   <button class="tbtn" data-tab="frete">Calculadora Frete</button>
+  <button class="tbtn" data-tab="cnpj">Consultar CNPJ</button>
   <button class="tbtn" data-tab="manuais">Manuais <span class="tc" id="tcM">0</span></button>
 </div></div>
 
@@ -360,6 +361,22 @@
         <div id="frBreakdown" style="margin-top:10px;padding:12px;background:#f0f4ff;border-radius:10px;font-size:12px;color:var(--text)"></div>
       </div>
     </div>
+  </div>
+</div></div>
+
+<!-- Tab: Consultar CNPJ -->
+<div class="tcont" id="tab-cnpj"><div class="bwrap">
+  <div style="max-width:920px">
+    <div style="background:#fff;border-radius:14px;border:1px solid var(--border);padding:20px;margin-bottom:16px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:18px;color:var(--navy);margin-bottom:6px">🔎 Consulta de CNPJ (Receita Federal)</div>
+      <div style="font-size:12.5px;color:var(--muted);margin-bottom:14px">Situação cadastral, sócios, endereço, atividade e ficha completa. Dados públicos da Receita — útil pra checar uma empresa antes de fechar locação.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <input id="cqInput" type="text" inputmode="numeric" placeholder="00.000.000/0000-00" maxlength="18" style="flex:1;min-width:220px;font-size:16px;padding:11px 14px;letter-spacing:.5px">
+        <button id="cqBtn" style="padding:11px 24px;border:none;border-radius:10px;background:var(--navy);color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;cursor:pointer;white-space:nowrap">Consultar</button>
+      </div>
+      <div id="cqHint" style="font-size:11px;color:var(--muted);margin-top:6px">Dica: pode colar com pontuação ou só números.</div>
+    </div>
+    <div id="cqResult"></div>
   </div>
 </div></div>
 
@@ -984,9 +1001,171 @@ async function buscarCNPJ(){
 document.getElementById('iSave').addEventListener('click',saveInteracao);
 document.getElementById('searchCl').addEventListener('input',()=>render());
 document.getElementById('searchPreco').addEventListener('input',()=>renderPrecos());
-document.querySelectorAll('.tbtn').forEach(b=>b.addEventListener('click',()=>{curTab=b.dataset.tab;document.querySelectorAll('.tbtn').forEach(x=>x.classList.toggle('active',x.dataset.tab===curTab));document.querySelectorAll('.tcont').forEach(x=>x.classList.toggle('active',x.id==='tab-'+curTab));if(curTab==='precos')renderPrecos();else if(curTab==='frete')initFrete();else if(curTab==='manuais')renderManuais();else render()}));
+document.querySelectorAll('.tbtn').forEach(b=>b.addEventListener('click',()=>{curTab=b.dataset.tab;document.querySelectorAll('.tbtn').forEach(x=>x.classList.toggle('active',x.dataset.tab===curTab));document.querySelectorAll('.tcont').forEach(x=>x.classList.toggle('active',x.id==='tab-'+curTab));if(curTab==='precos')renderPrecos();else if(curTab==='frete')initFrete();else if(curTab==='manuais')renderManuais();else if(curTab==='cnpj'){/* aba estatica, so consulta sob demanda */}else render()}));
 document.getElementById('mFiltroTipo').addEventListener('change',renderManuais);
 let _mBuscaTimer;document.getElementById('mFiltroBusca').addEventListener('input',()=>{clearTimeout(_mBuscaTimer);_mBuscaTimer=setTimeout(renderManuais,200)});
+
+// ── Consulta CNPJ (situação/ficha completa) ──
+const cqInput=document.getElementById('cqInput');
+cqInput.addEventListener('input',()=>{
+  let v=cqInput.value.replace(/\D/g,'').slice(0,14);
+  cqInput.value=v.replace(/^(\d{2})(\d{3})?(\d{3})?(\d{4})?(\d{2})?$/,(m,a,b,c,d,e)=>{
+    let o=a; if(b)o+='.'+b; if(c)o+='.'+c; if(d)o+='/'+d; if(e)o+='-'+e; return o;
+  });
+});
+cqInput.addEventListener('keydown',e=>{if(e.key==='Enter')consultarCNPJ()});
+document.getElementById('cqBtn').addEventListener('click',consultarCNPJ);
+
+let cqLastData=null;
+async function consultarCNPJ(){
+  const raw=cqInput.value.replace(/\D/g,'');
+  const res=document.getElementById('cqResult');
+  if(raw.length!==14){res.innerHTML=cqMsg('CNPJ deve ter 14 dígitos.','err');return}
+  const btn=document.getElementById('cqBtn');btn.textContent='Consultando...';btn.disabled=true;
+  res.innerHTML=cqMsg('Buscando na Receita Federal...','load');
+  try{
+    const r=await fetch('https://publica.cnpj.ws/cnpj/'+raw);
+    if(r.status===429){res.innerHTML=cqMsg('Muitas consultas seguidas. A API pública libera 3 por minuto — espere ~30s e tente de novo.','err');return}
+    if(!r.ok){res.innerHTML=cqMsg('CNPJ não encontrado ou inválido.','err');return}
+    const d=await r.json();
+    cqLastData=d;
+    res.innerHTML=renderCNPJ(d);
+  }catch(e){res.innerHTML=cqMsg('Erro de conexão. Tente novamente.','err')}
+  finally{btn.textContent='Consultar';btn.disabled=false}
+}
+
+function cqMsg(txt,tipo){
+  const cor=tipo==='err'?'#e11d48':tipo==='load'?'var(--muted)':'var(--navy)';
+  return '<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:24px;text-align:center;color:'+cor+';font-size:14px">'+esc(txt)+'</div>';
+}
+
+// Helpers de formatação
+function cqFmtCNPJ(s){s=String(s||'').replace(/\D/g,'');return s.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5')||s}
+function cqFmtCEP(s){s=String(s||'').replace(/\D/g,'');return s.length===8?s.replace(/^(\d{5})(\d{3})$/,'$1-$2'):s}
+function cqFmtData(s){if(!s)return'';const m=String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);return m?m[3]+'/'+m[2]+'/'+m[1]:String(s)}
+function cqFmtMoeda(v){const n=parseFloat(v);if(isNaN(n))return String(v??'');return 'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2})}
+function cqFmtTel(ddd,tel){if(!tel)return'';const t=String(tel).replace(/\D/g,'');const f=t.length>=5?t.replace(/^(\d{4,5})(\d{4})$/,'$1-$2'):t;return (ddd?'('+ddd+') ':'')+f}
+
+// Cor do badge de situação
+function cqSitCor(sit){
+  const s=(sit||'').toLowerCase();
+  if(s.includes('ativa'))return['#065f46','#d1fae5'];
+  if(s.includes('baixada'))return['#991b1b','#fee2e2'];
+  if(s.includes('inapta')||s.includes('suspensa')||s.includes('nula'))return['#92400e','#fef3c7'];
+  return ['#475569','#f1f5f9'];
+}
+
+function renderCNPJ(d){
+  const est=d.estabelecimento||{};
+  const sit=est.situacao_cadastral||'—';
+  const [sc,sbg]=cqSitCor(sit);
+  const cidade=(est.cidade||{}).nome||'';
+  const uf=(est.estado||{}).sigla||'';
+  const ap=est.atividade_principal||{};
+  const socios=d.socios||[];
+  const ies=est.inscricoes_estaduais||[];
+  const endParts=[est.tipo_logradouro,est.logradouro,est.numero].filter(Boolean).join(' ');
+  const end=[endParts,est.bairro].filter(Boolean).join(', ');
+
+  // Resumo bonito (campos principais)
+  const resumo=[
+    ['Nome Fantasia',est.nome_fantasia],
+    ['Situação',sit+(est.data_situacao_cadastral?' (desde '+cqFmtData(est.data_situacao_cadastral)+')':'')],
+    ['Abertura',cqFmtData(est.data_inicio_atividade)],
+    ['Porte',(d.porte||{}).descricao],
+    ['Natureza Jurídica',(d.natureza_juridica||{}).descricao],
+    ['Capital Social',d.capital_social?cqFmtMoeda(d.capital_social):''],
+    ['Simples Nacional',d.simples?(d.simples.simples==='Sim'?'Optante':'Não optante'):''],
+    ['Atividade Principal',ap.descricao?(ap.subclasse?ap.subclasse+' — ':'')+ap.descricao:''],
+    ['Endereço',end],
+    ['CEP',cqFmtCEP(est.cep)],
+    ['Cidade/UF',cidade&&uf?cidade+' / '+uf:''],
+    ['Telefone',cqFmtTel(est.ddd1,est.telefone1)],
+    ['E-mail',est.email],
+    ['Inscrições Estaduais',ies.length?ies.map(i=>(i.inscricao_estadual||'')+' ('+((i.estado||{}).sigla||'?')+(i.ativo?', ativa':', inativa')+')').join(' · '):'']
+  ].filter(x=>x[1]);
+
+  let html='<div style="background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden">';
+  // Cabeçalho
+  html+='<div style="background:var(--navy);color:#fff;padding:18px 22px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">'
+    +'<div><div style="font-size:11px;opacity:.7;letter-spacing:1px">'+cqFmtCNPJ(d.cnpj_raiz?est.cnpj:est.cnpj||d.cnpj)+'</div>'
+    +'<div style="font-family:\'Barlow Condensed\',sans-serif;font-weight:800;font-size:26px;line-height:1.1;margin-top:2px">'+esc(d.razao_social||'—')+'</div></div>'
+    +'<span style="background:'+sbg+';color:'+sc+';padding:6px 14px;border-radius:20px;font-weight:700;font-size:13px;white-space:nowrap">'+esc(sit)+'</span>'
+    +'</div></div>';
+  // Grid do resumo
+  html+='<div style="padding:20px 22px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px">';
+  resumo.forEach(([k,v])=>{
+    html+='<div><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">'+esc(k)+'</div>'
+      +'<div style="font-size:14px;color:var(--text);line-height:1.35">'+esc(v)+'</div></div>';
+  });
+  html+='</div>';
+  // Sócios
+  if(socios.length){
+    html+='<div style="padding:0 22px 20px"><div style="font-family:\'Barlow Condensed\',sans-serif;font-weight:700;font-size:16px;color:var(--navy);border-top:1px solid var(--border);padding-top:14px;margin-bottom:10px">Quadro Societário ('+socios.length+')</div>';
+    html+='<div style="display:flex;flex-direction:column;gap:8px">';
+    socios.forEach(s=>{
+      html+='<div style="background:#f8fafc;border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">'
+        +'<span style="font-weight:600;font-size:13.5px">'+esc(s.nome||'—')+'</span>'
+        +'<span style="font-size:12px;color:var(--muted)">'+esc((s.qualificacao_socio||{}).descricao||s.tipo||'')+'</span></div>';
+    });
+    html+='</div></div>';
+  }
+  // Ações: JSON bruto + copiar + contador
+  const nCampos=cqContaCampos(d);
+  html+='<div style="padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#fafbfc">'
+    +'<button onclick="cqToggleJSON()" style="padding:7px 14px;border:1.5px solid var(--navy);border-radius:8px;background:#fff;color:var(--navy);font-size:12px;font-weight:600;cursor:pointer">Ver JSON bruto</button>'
+    +'<button onclick="cqCopyJSON()" style="padding:7px 14px;border:1.5px solid var(--navy);border-radius:8px;background:#fff;color:var(--navy);font-size:12px;font-weight:600;cursor:pointer">Copiar JSON</button>'
+    +'<span style="font-size:11.5px;color:var(--muted);margin-left:auto">'+nCampos+' campos preenchidos · atualizado em '+cqFmtData(d.atualizado_em)+'</span>'
+    +'</div>';
+  // Seção dinâmica: TODOS os dados (recursivo)
+  html+='<details style="border-top:1px solid var(--border)"><summary style="padding:12px 22px;cursor:pointer;font-weight:600;font-size:13px;color:var(--navy);user-select:none">Ver todos os dados retornados</summary>'
+    +'<div style="padding:0 22px 20px">'+cqRenderRecursivo(d)+'</div></details>';
+  // JSON bruto (oculto)
+  html+='<pre id="cqJSON" style="display:none;margin:0;padding:16px 22px;background:#0f172a;color:#e2e8f0;font-size:11px;line-height:1.5;overflow-x:auto;border-top:1px solid var(--border);white-space:pre-wrap;word-break:break-word">'+esc(JSON.stringify(d,null,2))+'</pre>';
+  html+='</div>';
+  return html;
+}
+
+// Renderiza recursivamente qualquer valor (objeto, lista, lista de objetos, primitivo)
+function cqRenderRecursivo(val,nivel){
+  nivel=nivel||0;
+  if(val===null||val===undefined||val==='') return '<span style="color:var(--muted)">—</span>';
+  if(typeof val==='boolean') return val?'Sim':'Não';
+  if(typeof val!=='object') return esc(String(val));
+  if(Array.isArray(val)){
+    if(!val.length) return '<span style="color:var(--muted)">(vazio)</span>';
+    return '<div style="display:flex;flex-direction:column;gap:6px;margin:4px 0 4px '+(nivel?12:0)+'px">'
+      +val.map((it,i)=>'<div style="border-left:2px solid var(--border);padding-left:10px"><div style="font-size:10px;color:var(--muted);font-weight:700">#'+(i+1)+'</div>'+cqRenderRecursivo(it,nivel+1)+'</div>').join('')+'</div>';
+  }
+  // objeto
+  const entries=Object.entries(val);
+  return '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin:4px 0 4px '+(nivel?12:0)+'px">'
+    +entries.map(([k,v])=>{
+      const label=k.replace(/_/g,' ');
+      const isComplex=v&&typeof v==='object';
+      return '<div style="'+(isComplex?'grid-column:1/-1;':'')+'background:#f8fafc;border-radius:6px;padding:8px 10px">'
+        +'<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px">'+esc(label)+'</div>'
+        +'<div style="font-size:13px;color:var(--text);margin-top:1px">'+cqRenderRecursivo(v,nivel+1)+'</div></div>';
+    }).join('')+'</div>';
+}
+
+// Conta campos preenchidos (recursivo, folhas não-vazias)
+function cqContaCampos(val){
+  if(val===null||val===undefined||val==='') return 0;
+  if(typeof val!=='object') return 1;
+  if(Array.isArray(val)) return val.reduce((s,x)=>s+cqContaCampos(x),0);
+  return Object.values(val).reduce((s,x)=>s+cqContaCampos(x),0);
+}
+
+function cqToggleJSON(){const p=document.getElementById('cqJSON');if(p)p.style.display=p.style.display==='none'?'block':'none'}
+function cqCopyJSON(){
+  if(!cqLastData)return;
+  const txt=JSON.stringify(cqLastData,null,2);
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>toast('JSON copiado!')).catch(()=>{});
+  }
+}
 document.getElementById('manSave').addEventListener('click',saveManual);
 
 // ── CRUD Manuais ──

@@ -1062,26 +1062,35 @@ function renderCNPJ(d){
   const cidade=(est.cidade||{}).nome||'';
   const uf=(est.estado||{}).sigla||'';
   const ap=est.atividade_principal||{};
+  const secundarias=est.atividades_secundarias||[];
   const socios=d.socios||[];
   const ies=est.inscricoes_estaduais||[];
   const endParts=[est.tipo_logradouro,est.logradouro,est.numero].filter(Boolean).join(' ');
-  const end=[endParts,est.bairro].filter(Boolean).join(', ');
+  const end=[endParts,est.complemento,est.bairro].filter(Boolean).join(', ');
+  const sn=d.simples||{};
+  const simplesTxt=sn.simples==='Sim'?'Optante do Simples':(sn.mei==='Sim'?'MEI':'Não optante');
 
   // Resumo bonito (campos principais)
   const resumo=[
     ['Nome Fantasia',est.nome_fantasia],
     ['Situação',sit+(est.data_situacao_cadastral?' (desde '+cqFmtData(est.data_situacao_cadastral)+')':'')],
+    ['Motivo da Situação',est.motivo_situacao_cadastral],
+    ['Situação Especial',est.situacao_especial?est.situacao_especial+(est.data_situacao_especial?' ('+cqFmtData(est.data_situacao_especial)+')':''):''],
+    ['Tipo',est.tipo],
     ['Abertura',cqFmtData(est.data_inicio_atividade)],
     ['Porte',(d.porte||{}).descricao],
     ['Natureza Jurídica',(d.natureza_juridica||{}).descricao],
     ['Capital Social',d.capital_social?cqFmtMoeda(d.capital_social):''],
-    ['Simples Nacional',d.simples?(d.simples.simples==='Sim'?'Optante':'Não optante'):''],
+    ['Regime Tributário',simplesTxt],
     ['Atividade Principal',ap.descricao?(ap.subclasse?ap.subclasse+' — ':'')+ap.descricao:''],
     ['Endereço',end],
     ['CEP',cqFmtCEP(est.cep)],
     ['Cidade/UF',cidade&&uf?cidade+' / '+uf:''],
     ['Telefone',cqFmtTel(est.ddd1,est.telefone1)],
+    ['Telefone 2',cqFmtTel(est.ddd2,est.telefone2)],
+    ['Fax',cqFmtTel(est.ddd_fax,est.fax)],
     ['E-mail',est.email],
+    ['Responsável (Receita)',(d.qualificacao_do_responsavel||{}).descricao],
     ['Inscrições Estaduais',ies.length?ies.map(i=>(i.inscricao_estadual||'')+' ('+((i.estado||{}).sigla||'?')+(i.ativo?', ativa':', inativa')+')').join(' · '):'']
   ].filter(x=>x[1]);
 
@@ -1100,6 +1109,15 @@ function renderCNPJ(d){
       +'<div style="font-size:14px;color:var(--text);line-height:1.35">'+esc(v)+'</div></div>';
   });
   html+='</div>';
+  // Atividades secundárias (CNAEs) — colapsável
+  if(secundarias.length){
+    html+='<div style="padding:0 22px 18px"><details><summary style="font-family:\'Barlow Condensed\',sans-serif;font-weight:700;font-size:16px;color:var(--navy);border-top:1px solid var(--border);padding-top:14px;cursor:pointer;user-select:none">Atividades Secundárias ('+secundarias.length+')</summary>';
+    html+='<div style="display:flex;flex-direction:column;gap:4px;margin-top:10px">';
+    secundarias.forEach(a=>{
+      html+='<div style="background:#f8fafc;border-radius:6px;padding:7px 12px;font-size:12.5px"><b style="color:var(--navy);font-size:11px">'+esc(a.subclasse||a.classe||'')+'</b> '+esc(a.descricao||'')+'</div>';
+    });
+    html+='</div></details></div>';
+  }
   // Sócios
   if(socios.length){
     html+='<div style="padding:0 22px 20px"><div style="font-family:\'Barlow Condensed\',sans-serif;font-weight:700;font-size:16px;color:var(--navy);border-top:1px solid var(--border);padding-top:14px;margin-bottom:10px">Quadro Societário ('+socios.length+')</div>';

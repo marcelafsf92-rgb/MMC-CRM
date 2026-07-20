@@ -1,7 +1,7 @@
 // MMC CRM — Service Worker
 // v2: bypassa Supabase/BrasilAPI e requisições não-GET (nunca cacheia POST),
 // navigate network-first, atualiza cache de assets. Evita "salva mas some".
-const V='mmc-crm-v4';
+const V='mmc-crm-v5';
 self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(['/','/index.html','/manifest.json']).catch(()=>{})));self.skipWaiting()});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==V).map(x=>caches.delete(x)))));self.clients.claim()});
 self.addEventListener('fetch',e=>{
